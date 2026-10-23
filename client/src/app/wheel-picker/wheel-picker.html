@@ -1,0 +1,8 @@
+<div class="band"></div>
+<div class="wheel" #wheel (scroll)="onScroll()">
+  <div class="spacer"></div>
+  @for (i of items(); track i) {
+    <div class="item" [class.selected]="i === value()" (click)="value.set(i)">{{ format(i) }}</div>
+  }
+  <div class="spacer"></div>
+</div>

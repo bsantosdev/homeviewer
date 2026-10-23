@@ -1,0 +1,11 @@
+bin/
+obj/
+.vs/
+*.user
+
+# Angular build output and runtime data
+server/HomeViewer.Api/wwwroot/
+server/HomeViewer.Api/data/
+
+node_modules/
+.angular/

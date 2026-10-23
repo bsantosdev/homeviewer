@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>HomeViewer</title>
+  <base href="/">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="HomeViewer">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <script>
+    // Show startup errors on screen: old devices have no console to look at.
+    window.onerror = function (msg, src, line) {
+      var el = document.createElement('pre');
+      el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;margin:0;padding:8px;background:#b00;color:#fff;font-size:12px;white-space:pre-wrap;z-index:9999';
+      el.textContent = msg + '\n' + src + ':' + line;
+      document.body.appendChild(el);
+    };
+  </script>
+</head>
+<body>
+  <app-root></app-root>
+</body>
+</html>

@@ -1,0 +1,40 @@
+@if (state() === 'setup') {
+  <div class="wheels">
+    <app-wheel-picker class="minutes" [max]="99" [(value)]="minutes" />
+    <span class="colon">:</span>
+    <app-wheel-picker class="seconds" [max]="59" [(value)]="seconds" />
+  </div>
+} @else {
+  <div class="display" [class.done]="state() === 'done'">{{ display() }}</div>
+}
+
+@switch (state()) {
+  @case ('setup') {
+    <div class="row">
+      @for (m of presets; track m) {
+        <button class="preset" [class.selected]="duration() === m * 60" (click)="setPreset(m)">{{ m }}m</button>
+      }
+    </div>
+    <div class="row">
+      <button class="primary" [disabled]="!duration()" (click)="start()">Start</button>
+    </div>
+  }
+  @case ('running') {
+    <div class="row">
+      <button class="primary" (click)="pause()">Pause</button>
+      <button (click)="reset()">Reset</button>
+    </div>
+  }
+  @case ('paused') {
+    <div class="row">
+      <button class="primary" (click)="resume()">Resume</button>
+      <button (click)="reset()">Reset</button>
+    </div>
+  }
+  @case ('done') {
+    <p class="label">Time's up!</p>
+    <div class="row">
+      <button class="primary" (click)="reset()">Dismiss</button>
+    </div>
+  }
+}

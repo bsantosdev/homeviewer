@@ -1,0 +1,27 @@
+<h1>Dashboard settings</h1>
+
+@if (form(); as f) {
+  <form (ngSubmit)="save()">
+    <label>Title <input name="title" [(ngModel)]="f.title" /></label>
+    <label>Message <textarea name="message" rows="3" [(ngModel)]="f.message"></textarea></label>
+    <label>
+      Theme
+      <select name="theme" [(ngModel)]="f.theme">
+        <option value="dark">Dark</option>
+        <option value="light">Light</option>
+      </select>
+    </label>
+    <label>Location name <input name="locationName" [(ngModel)]="f.locationName" /></label>
+    <div class="row">
+      <label>Latitude <input name="latitude" type="number" step="any" [(ngModel)]="f.latitude" /></label>
+      <label>Longitude <input name="longitude" type="number" step="any" [(ngModel)]="f.longitude" /></label>
+    </div>
+    <div class="actions">
+      <button type="submit">Save</button>
+      <span>{{ status() }}</span>
+      <a routerLink="/">View dashboard</a>
+    </div>
+  </form>
+} @else {
+  <p>Loading…</p>
+}

@@ -1,0 +1,29 @@
+@if (settings(); as s) {
+  <button class="timer-toggle" [class.active]="timerOpen()" (click)="timerOpen.set(!timerOpen())" aria-label="Timer">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" />
+    </svg>
+  </button>
+
+  <header>
+    <h1>{{ s.title }}</h1>
+    <p class="message">{{ s.message }}</p>
+  </header>
+
+  <main>
+    @if (timerOpen()) {
+      <app-timer />
+    } @else {
+      <div class="time">{{ now() | date: 'HH:mm' }}</div>
+      <div class="date">{{ now() | date: 'EEEE, d MMMM' }}</div>
+    }
+  </main>
+
+  <footer>
+    @if (weather(); as w) {
+      <span class="temp">{{ w.temperature }}°</span>
+      <span>{{ weatherDescription() }} · {{ s.locationName }}</span>
+    }
+  </footer>
+}

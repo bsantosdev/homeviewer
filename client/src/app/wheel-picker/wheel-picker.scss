@@ -1,0 +1,54 @@
+// Three rows are visible; the middle one is the selected value.
+:host {
+  --item-height: 10vh;
+  position: relative;
+  display: inline-block;
+  width: 18vh;
+  height: calc(var(--item-height) * 3);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.wheel {
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch; // momentum scrolling on iOS 12
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent);
+  mask-image: linear-gradient(transparent, #000 35%, #000 65%, transparent);
+}
+
+.wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.spacer,
+.item {
+  height: var(--item-height);
+}
+
+.item {
+  line-height: var(--item-height);
+  font-size: 8vh;
+  font-weight: 200;
+  font-variant-numeric: tabular-nums;
+  scroll-snap-align: center;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+
+.item.selected {
+  opacity: 1;
+}
+
+.band {
+  position: absolute;
+  top: var(--item-height);
+  left: 0;
+  right: 0;
+  height: var(--item-height);
+  border-radius: 1.5vh;
+  background: rgba(128, 128, 128, 0.2);
+  pointer-events: none;
+}
