@@ -1,4 +1,4 @@
-import { Component, effect, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { DashboardSettings, SettingsService } from '../settings.service';
@@ -7,7 +7,8 @@ import { DashboardSettings, SettingsService } from '../settings.service';
   selector: 'app-admin',
   imports: [FormsModule, RouterLink],
   templateUrl: './admin.html',
-  styleUrl: './admin.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'mx-auto block max-w-[480px] px-4 py-6 text-base' },
 })
 export class Admin {
   private readonly service = inject(SettingsService);
@@ -22,9 +23,7 @@ export class Admin {
     });
   }
 
-  protected async save(): Promise<void> {
-    const form = this.form();
-    if (!form) return;
+  protected async save(form: DashboardSettings): Promise<void> {
     this.status.set('Saving…');
     try {
       await this.service.save(form);

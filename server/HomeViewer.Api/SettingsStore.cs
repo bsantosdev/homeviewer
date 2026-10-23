@@ -2,21 +2,12 @@ using System.Text.Json;
 
 namespace HomeViewer.Api;
 
-public class SettingsStore
+public class SettingsStore(string path)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web) { WriteIndented = true };
 
-    private readonly string _path;
     private readonly Lock _lock = new();
-    private DashboardSettings _current;
-
-    public SettingsStore(IWebHostEnvironment env)
-    {
-        _path = Path.Combine(env.ContentRootPath, "data", "settings.json");
-        _current = File.Exists(_path)
-            ? JsonSerializer.Deserialize<DashboardSettings>(File.ReadAllText(_path), JsonOptions) ?? DashboardSettings.Default
-            : DashboardSettings.Default;
-    }
+    private DashboardSettings _current = Load(path);
 
     public DashboardSettings Get()
     {
@@ -27,9 +18,14 @@ public class SettingsStore
     {
         lock (_lock)
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
-            File.WriteAllText(_path, JsonSerializer.Serialize(settings, JsonOptions));
+            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+            File.WriteAllText(path, JsonSerializer.Serialize(settings, JsonOptions));
             _current = settings;
         }
     }
+
+    private static DashboardSettings Load(string path) =>
+        File.Exists(path)
+            ? JsonSerializer.Deserialize<DashboardSettings>(File.ReadAllText(path), JsonOptions) ?? DashboardSettings.Default
+            : DashboardSettings.Default;
 }

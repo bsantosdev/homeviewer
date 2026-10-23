@@ -1,8 +1,18 @@
-<div class="band"></div>
-<div class="wheel" #wheel (scroll)="onScroll()">
-  <div class="spacer"></div>
+<div
+  class="pointer-events-none absolute left-0 right-0 top-[10vh] h-[10vh] rounded-[1.5vh] bg-neutral-500/20"
+></div>
+<div #wheel class="wheel h-full snap-y snap-mandatory overflow-y-scroll" (scroll)="onScroll()">
+  <div class="h-[10vh]"></div>
   @for (i of items(); track i) {
-    <div class="item" [class.selected]="i === value()" (click)="value.set(i)">{{ format(i) }}</div>
+    <button
+      type="button"
+      class="item block h-[10vh] w-full snap-center text-wheel font-extralight tabular-nums transition-opacity duration-150"
+      [class.opacity-50]="i !== value()"
+      [class.selected]="i === value()"
+      (click)="value.set(i)"
+    >
+      {{ format(i) }}
+    </button>
   }
-  <div class="spacer"></div>
+  <div class="h-[10vh]"></div>
 </div>

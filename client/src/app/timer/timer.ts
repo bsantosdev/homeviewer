@@ -1,10 +1,21 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { WheelPicker } from '../wheel-picker/wheel-picker';
 
 type TimerState = 'setup' | 'running' | 'paused' | 'done';
 
+interface LegacyWindow {
+  webkitAudioContext?: typeof AudioContext;
+}
+
 const PRESET_MINUTES = [1, 3, 5, 10, 15, 30];
-const ALARM_SECONDS = 60;
+export const ALARM_SECONDS = 60;
 
 function formatTime(totalSeconds: number): string {
   const minutes = Math.floor(totalSeconds / 60);
@@ -12,11 +23,20 @@ function formatTime(totalSeconds: number): string {
   return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+// iOS 12 only has the prefixed constructor.
+function audioContextClass(): typeof AudioContext | undefined {
+  return (
+    (window as Partial<typeof window>).AudioContext ?? (window as LegacyWindow).webkitAudioContext
+  );
+}
+
 @Component({
   selector: 'app-timer',
   imports: [WheelPicker],
   templateUrl: './timer.html',
   styleUrl: './timer.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'block select-none' },
 })
 export class Timer {
   protected readonly presets = PRESET_MINUTES;
@@ -37,7 +57,7 @@ export class Timer {
   constructor() {
     inject(DestroyRef).onDestroy(() => {
       this.stopTimers();
-      this.audio?.close();
+      void this.audio?.close();
     });
   }
 
@@ -46,8 +66,8 @@ export class Timer {
     this.seconds.set(0);
   }
 
+  // The Start button is disabled while the duration is 00:00.
   protected start(): void {
-    if (!this.duration()) return;
     this.unlockAudio();
     this.remaining.set(this.duration());
     this.run();
@@ -71,7 +91,9 @@ export class Timer {
   private run(): void {
     this.endsAt = Date.now() + this.remaining() * 1000;
     this.state.set('running');
-    this.tick = setInterval(() => this.update(), 250);
+    this.tick = setInterval(() => {
+      this.update();
+    }, 250);
   }
 
   private update(): void {
@@ -99,10 +121,10 @@ export class Timer {
   // iOS only allows audio that was started by a user gesture, so the
   // AudioContext is created (or resumed) when Start is tapped.
   private unlockAudio(): void {
-    const AudioCtx = window.AudioContext ?? (window as any).webkitAudioContext;
+    const AudioCtx = audioContextClass();
     if (!AudioCtx) return;
     this.audio ??= new AudioCtx();
-    this.audio?.resume();
+    void this.audio.resume();
   }
 
   private beep(): void {

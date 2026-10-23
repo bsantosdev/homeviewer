@@ -17,7 +17,9 @@ for (const file of files) {
     compact: true,
     comments: false,
     sourceType: 'module',
-    presets: [['@babel/preset-env', { targets: 'iOS >= 12, Safari >= 12', modules: false, bugfixes: true }]],
+    presets: [
+      ['@babel/preset-env', { targets: 'iOS >= 12, Safari >= 12', modules: false, bugfixes: true }],
+    ],
   });
   await writeFile(path, code);
   console.log(`Transpiled ${file}`);

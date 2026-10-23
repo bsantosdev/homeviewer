@@ -1,13 +1,27 @@
-import { Component, DestroyRef, ElementRef, afterRenderEffect, computed, inject, input, model, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  afterRenderEffect,
+  computed,
+  inject,
+  input,
+  model,
+  viewChild,
+} from '@angular/core';
 
 // Wait this long after the last scroll event before picking a value
 // (Safari 12 has no `scrollend` event).
-const SETTLE_MS = 120;
+export const SETTLE_MS = 120;
 
 @Component({
   selector: 'app-wheel-picker',
   templateUrl: './wheel-picker.html',
   styleUrl: './wheel-picker.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  // Three rows are visible; the middle one is the selected value.
+  host: { class: 'relative inline-block h-[30vh] w-[18vh] select-none' },
 })
 export class WheelPicker {
   readonly max = input.required<number>();
@@ -24,7 +38,9 @@ export class WheelPicker {
       const value = this.value();
       if (this.indexAt(el) !== value) el.scrollTop = value * this.itemHeight(el);
     });
-    inject(DestroyRef).onDestroy(() => clearTimeout(this.settleTimer));
+    inject(DestroyRef).onDestroy(() => {
+      clearTimeout(this.settleTimer);
+    });
   }
 
   protected format(n: number): string {
@@ -43,7 +59,8 @@ export class WheelPicker {
   }
 
   private itemHeight(el: HTMLElement): number {
-    return el.querySelector<HTMLElement>('.item')?.offsetHeight || 1;
+    // Fall back to 1 when there's no layout (e.g. in unit tests).
+    return Math.max(1, el.querySelector<HTMLElement>('.item')?.offsetHeight ?? 0);
   }
 
   private indexAt(el: HTMLElement): number {

@@ -9,3 +9,6 @@ server/HomeViewer.Api/data/
 
 node_modules/
 .angular/
+
+# Test coverage output
+TestResults/

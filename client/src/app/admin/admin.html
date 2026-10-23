@@ -1,25 +1,65 @@
-<h1>Dashboard settings</h1>
+<h1 class="mb-4 text-2xl font-semibold">Dashboard settings</h1>
 
 @if (form(); as f) {
-  <form (ngSubmit)="save()">
-    <label>Title <input name="title" [(ngModel)]="f.title" /></label>
-    <label>Message <textarea name="message" rows="3" [(ngModel)]="f.message"></textarea></label>
-    <label>
+  <form class="flex flex-col" (ngSubmit)="save(f)">
+    <label class="mb-3.5 flex flex-col">
+      Title
+      <input
+        class="mt-1 rounded border border-neutral-400 p-2"
+        name="title"
+        [(ngModel)]="f.title"
+      />
+    </label>
+    <label class="mb-3.5 flex flex-col">
+      Message
+      <textarea
+        class="mt-1 rounded border border-neutral-400 p-2"
+        name="message"
+        rows="3"
+        [(ngModel)]="f.message"
+      ></textarea>
+    </label>
+    <label class="mb-3.5 flex flex-col">
       Theme
-      <select name="theme" [(ngModel)]="f.theme">
+      <select class="mt-1 rounded border border-neutral-400 p-2" name="theme" [(ngModel)]="f.theme">
         <option value="dark">Dark</option>
         <option value="light">Light</option>
       </select>
     </label>
-    <label>Location name <input name="locationName" [(ngModel)]="f.locationName" /></label>
-    <div class="row">
-      <label>Latitude <input name="latitude" type="number" step="any" [(ngModel)]="f.latitude" /></label>
-      <label>Longitude <input name="longitude" type="number" step="any" [(ngModel)]="f.longitude" /></label>
+    <label class="mb-3.5 flex flex-col">
+      Location name
+      <input
+        class="mt-1 rounded border border-neutral-400 p-2"
+        name="locationName"
+        [(ngModel)]="f.locationName"
+      />
+    </label>
+    <div class="mb-3.5 flex">
+      <label class="mr-3 flex flex-1 flex-col">
+        Latitude
+        <input
+          class="mt-1 rounded border border-neutral-400 p-2"
+          name="latitude"
+          type="number"
+          step="any"
+          [(ngModel)]="f.latitude"
+        />
+      </label>
+      <label class="flex flex-1 flex-col">
+        Longitude
+        <input
+          class="mt-1 rounded border border-neutral-400 p-2"
+          name="longitude"
+          type="number"
+          step="any"
+          [(ngModel)]="f.longitude"
+        />
+      </label>
     </div>
-    <div class="actions">
-      <button type="submit">Save</button>
-      <span>{{ status() }}</span>
-      <a routerLink="/">View dashboard</a>
+    <div class="flex items-center">
+      <button type="submit" class="rounded bg-neutral-800 px-4 py-2 text-white">Save</button>
+      <span class="ml-4">{{ status() }}</span>
+      <a class="ml-auto text-blue-700 underline" routerLink="/">View dashboard</a>
     </div>
   </form>
 } @else {

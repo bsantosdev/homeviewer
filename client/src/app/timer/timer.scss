@@ -1,77 +1,17 @@
-// No flexbox `gap` here: it needs Safari 14.1+ and the wall iPad runs iOS 12.
-:host {
-  display: block;
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-.display {
-  font-size: 18vh;
-  font-weight: 200;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-
-.wheels {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.colon {
-  margin: 0 1vw;
-  font-size: 8vh;
-  font-weight: 200;
-}
-
-.display.done {
-  animation: flash 1s steps(2, start) infinite;
-}
-
-@keyframes flash {
-  to {
-    visibility: hidden;
-  }
-}
-
-.label {
-  margin: 1vh 0 0;
-  font-size: 4vh;
-}
-
+// Shared button styles, so the template isn't repeating long class lists.
+// Spacing uses margins: flexbox `gap` needs Safari 14.1+ (see tailwind.config.js).
 .row {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-top: 2vh;
+  @apply mt-[2vh] flex flex-wrap justify-center;
 }
 
-button {
-  margin: 0.6vh 0.6vw;
-  padding: 1.2vh 2.5vw;
-  min-width: 10vh;
-  border: 2px solid currentColor;
-  border-radius: 1.5vh;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-size: 3vh;
-  opacity: 0.85;
-  -webkit-tap-highlight-color: transparent;
+.btn {
+  @apply mx-[0.6vw] my-[0.6vh] min-w-[10vh] rounded-[1.5vh] border-2 border-current px-[2.5vw] py-[1.2vh] text-vh-3 opacity-90 [-webkit-tap-highlight-color:transparent] active:bg-neutral-500/30 active:opacity-100 disabled:opacity-30;
 }
 
-button:active,
-button.selected {
-  opacity: 1;
-  background: rgba(128, 128, 128, 0.3);
+.btn-selected {
+  @apply bg-neutral-500/30 opacity-100;
 }
 
-button:disabled {
-  opacity: 0.3;
-}
-
-.primary {
-  min-width: 20vh;
-  background: rgba(128, 128, 128, 0.25);
-  opacity: 1;
+.btn-primary {
+  @apply min-w-[20vh] bg-neutral-500/25 opacity-100;
 }

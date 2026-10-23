@@ -1,29 +1,44 @@
 @if (settings(); as s) {
-  <button class="timer-toggle" [class.active]="timerOpen()" (click)="timerOpen.set(!timerOpen())" aria-label="Timer">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <button
+    type="button"
+    class="absolute right-[3vw] top-[3vh] h-[7vh] w-[7vh] p-[1.2vh] text-[#1f6fd1] [-webkit-tap-highlight-color:transparent] dark:text-[#5aa9ff]"
+    [class.opacity-75]="!timerOpen()"
+    [class.opacity-100]="timerOpen()"
+    aria-label="Timer"
+    (click)="toggleTimer()"
+  >
+    <svg
+      class="block h-full w-full"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
       <circle cx="12" cy="13" r="8" />
       <path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" />
     </svg>
   </button>
 
   <header>
-    <h1>{{ s.title }}</h1>
-    <p class="message">{{ s.message }}</p>
+    <h1 class="text-vh-5 font-semibold">{{ s.title }}</h1>
+    <p class="mt-[1vh] text-vh-3 opacity-75">{{ s.message }}</p>
   </header>
 
   <main>
     @if (timerOpen()) {
       <app-timer />
     } @else {
-      <div class="time">{{ now() | date: 'HH:mm' }}</div>
-      <div class="date">{{ now() | date: 'EEEE, d MMMM' }}</div>
+      <div class="text-clock font-extralight tabular-nums">{{ now() | date: 'HH:mm' }}</div>
+      <div class="text-vh-4 opacity-80">{{ now() | date: 'EEEE, d MMMM' }}</div>
     }
   </main>
 
-  <footer>
+  <footer class="flex min-h-[6vh] items-baseline justify-center text-vh-3.5">
     @if (weather(); as w) {
-      <span class="temp">{{ w.temperature }}°</span>
-      <span>{{ weatherDescription() }} · {{ s.locationName }}</span>
+      <span class="mr-[2vw] text-vh-6 font-light">{{ w.temperature }}°</span>
+      <span>{{ w.description }} · {{ s.locationName }}</span>
     }
   </footer>
 }

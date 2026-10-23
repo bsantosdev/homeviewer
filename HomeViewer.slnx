@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/server/">
+    <Project Path="server/HomeViewer.Api.Tests/HomeViewer.Api.Tests.csproj" />
     <Project Path="server/HomeViewer.Api/HomeViewer.Api.csproj" />
   </Folder>
 </Solution>
