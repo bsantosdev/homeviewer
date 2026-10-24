@@ -1,6 +1,6 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, InjectionToken, inject, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { firstValueFrom } from 'rxjs';
 
@@ -29,6 +29,8 @@ export const SETTINGS_HUB = new InjectionToken<SettingsHub>('SETTINGS_HUB', {
 export class SettingsService {
   private readonly http = inject(HttpClient);
   readonly settings = signal<DashboardSettings | null>(null);
+  /** Dark until the settings say otherwise, so the first paint doesn't flash white. */
+  readonly isDark = computed(() => (this.settings()?.theme ?? 'dark') === 'dark');
 
   constructor() {
     this.load();

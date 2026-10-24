@@ -34,8 +34,11 @@
           <hugeicons-icon class="block h-full w-full" [icon]="icon" [strokeWidth]="1.5" />
         </span>
       }
-      <span class="mr-[2vw] text-vh-6 font-light">{{ w.temperature }}°</span>
-      <span>{{ w.description }} · {{ s.locationName }}</span>
+      <span class="weather-temp mr-[1.5vw] text-vh-6 font-light">{{ w.temperature }}°</span>
+      <span class="weather-range mr-[2vw] opacity-70" aria-label="Today's low and high">
+        ↓{{ w.min }}° ↑{{ w.max }}°
+      </span>
+      <span class="weather-summary">{{ w.description }} · {{ s.locationName }}</span>
     }
   </footer>
 }

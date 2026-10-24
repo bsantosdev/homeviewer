@@ -22,14 +22,22 @@ describe('WeatherService', () => {
     expect(req.request.params.get('latitude')).toBe('38.72');
     expect(req.request.params.get('longitude')).toBe('-9.14');
     expect(req.request.params.get('current')).toBe('temperature_2m,weather_code,is_day');
-    req.flush({ current: { temperature_2m: 13.6, weather_code: weatherCode, is_day: isDay } });
+    expect(req.request.params.get('daily')).toBe('temperature_2m_min,temperature_2m_max');
+    expect(req.request.params.get('timezone')).toBe('auto');
+    expect(req.request.params.get('forecast_days')).toBe('1');
+    req.flush({
+      current: { temperature_2m: 13.6, weather_code: weatherCode, is_day: isDay },
+      daily: { temperature_2m_min: [9.4], temperature_2m_max: [18.5] },
+    });
   }
 
-  it('returns the rounded temperature, description and condition', async () => {
+  it("returns the rounded temperature, today's range, description and condition", async () => {
     const weather = service.current(38.72, -9.14);
     respond(3);
     expect(await weather).toEqual({
       temperature: 14,
+      min: 9,
+      max: 19,
       description: 'Overcast',
       condition: 'cloudy',
       isDay: true,

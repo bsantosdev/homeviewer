@@ -16,6 +16,9 @@ export type WeatherCondition =
 
 export interface Weather {
   temperature: number;
+  /** Today's low and high, in the location's time zone. */
+  min: number;
+  max: number;
   description: string;
   condition: WeatherCondition;
   isDay: boolean;
@@ -23,6 +26,7 @@ export interface Weather {
 
 interface OpenMeteoResponse {
   current: { temperature_2m: number; weather_code: number; is_day: 0 | 1 };
+  daily: { temperature_2m_min: [number]; temperature_2m_max: [number] };
 }
 
 // WMO weather codes used by Open-Meteo.
@@ -66,12 +70,21 @@ export class WeatherService {
   async current(latitude: number, longitude: number): Promise<Weather> {
     const data = await firstValueFrom(
       this.http.get<OpenMeteoResponse>(OPEN_METEO_URL, {
-        params: { latitude, longitude, current: 'temperature_2m,weather_code,is_day' },
+        params: {
+          latitude,
+          longitude,
+          current: 'temperature_2m,weather_code,is_day',
+          daily: 'temperature_2m_min,temperature_2m_max',
+          timezone: 'auto',
+          forecast_days: 1,
+        },
       }),
     );
     const [description, condition] = WEATHER_CODES[data.current.weather_code] ?? ['', 'unknown'];
     return {
       temperature: Math.round(data.current.temperature_2m),
+      min: Math.round(data.daily.temperature_2m_min[0]),
+      max: Math.round(data.daily.temperature_2m_max[0]),
       description,
       condition,
       isDay: data.current.is_day === 1,

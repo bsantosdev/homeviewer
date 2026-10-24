@@ -7,6 +7,8 @@ import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/te
 
 const MAINLY_CLEAR: Weather = {
   temperature: 21,
+  min: 14,
+  max: 24,
   description: 'Mainly clear',
   condition: 'partly-cloudy',
   isDay: true,
@@ -53,8 +55,9 @@ describe('Dashboard', () => {
     expect(text(el, 'main div')).toBe('14:05');
     expect(el.textContent).toContain('Friday, 23 October');
     expect(current).toHaveBeenCalledWith(38.72, -9.14);
-    expect(text(el, 'footer span:nth-last-child(2)')).toBe('21°');
-    expect(text(el, 'footer span:last-child')).toBe('Mainly clear · Lisbon');
+    expect(text(el, 'footer .weather-temp')).toBe('21°');
+    expect(text(el, 'footer .weather-range')).toBe('↓14° ↑24°');
+    expect(text(el, 'footer .weather-summary')).toBe('Mainly clear · Lisbon');
   });
 
   it('shows an icon for the weather conditions', async () => {
@@ -81,7 +84,7 @@ describe('Dashboard', () => {
     current.mockResolvedValue({ ...MAINLY_CLEAR, description: '', condition: 'unknown' });
     await loadSettings();
     expect(el.querySelector('footer .weather-icon')).toBeNull();
-    expect(text(el, 'footer span:nth-last-child(2)')).toBe('21°');
+    expect(text(el, 'footer .weather-temp')).toBe('21°');
   });
 
   it('applies the theme from the settings', async () => {
