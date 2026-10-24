@@ -7,18 +7,7 @@
     aria-label="Timer"
     (click)="toggleTimer()"
   >
-    <svg
-      class="block h-full w-full"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <circle cx="12" cy="13" r="8" />
-      <path d="M12 9v4l2.5 2.5M9 2h6M12 2v3" />
-    </svg>
+    <hugeicons-icon class="block h-full w-full" [icon]="timerIcon" [strokeWidth]="2" />
   </button>
 
   <header>
@@ -37,6 +26,14 @@
 
   <footer class="flex min-h-[6vh] items-baseline justify-center text-vh-3.5">
     @if (weather(); as w) {
+      @if (weatherIconFor(w.condition, w.isDay); as icon) {
+        <span
+          class="weather-icon mr-[1.5vw] inline-block h-[6vh] w-[6vh] self-center"
+          aria-hidden="true"
+        >
+          <hugeicons-icon class="block h-full w-full" [icon]="icon" [strokeWidth]="1.5" />
+        </span>
+      }
       <span class="mr-[2vw] text-vh-6 font-light">{{ w.temperature }}°</span>
       <span>{{ w.description }} · {{ s.locationName }}</span>
     }

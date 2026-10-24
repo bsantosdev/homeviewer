@@ -5,6 +5,13 @@ import { SettingsService } from '../settings.service';
 import { Weather, WeatherService } from '../weather.service';
 import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/test-helpers';
 
+const MAINLY_CLEAR: Weather = {
+  temperature: 21,
+  description: 'Mainly clear',
+  condition: 'partly-cloudy',
+  isDay: true,
+};
+
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let el: HTMLElement;
@@ -14,7 +21,7 @@ describe('Dashboard', () => {
     // Fake only the clocks the component uses; Angular's scheduler keeps real timeouts.
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date(2026, 9, 23, 14, 5));
-    current = vi.fn().mockResolvedValue({ temperature: 21, description: 'Mainly clear' });
+    current = vi.fn().mockResolvedValue(MAINLY_CLEAR);
 
     TestBed.configureTestingModule({
       providers: [...provideTestBackend(), { provide: WeatherService, useValue: { current } }],
@@ -46,8 +53,35 @@ describe('Dashboard', () => {
     expect(text(el, 'main div')).toBe('14:05');
     expect(el.textContent).toContain('Friday, 23 October');
     expect(current).toHaveBeenCalledWith(38.72, -9.14);
-    expect(text(el, 'footer span:first-child')).toBe('21°');
+    expect(text(el, 'footer span:nth-last-child(2)')).toBe('21°');
     expect(text(el, 'footer span:last-child')).toBe('Mainly clear · Lisbon');
+  });
+
+  it('shows an icon for the weather conditions', async () => {
+    await loadSettings();
+    const icon = query(el, 'footer .weather-icon');
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.querySelector('svg path')).not.toBeNull();
+  });
+
+  it('changes the weather icon when the conditions change', async () => {
+    await loadSettings();
+    const before = query(el, 'footer .weather-icon svg', SVGElement).innerHTML;
+
+    current.mockResolvedValue({ ...MAINLY_CLEAR, condition: 'snow' });
+    vi.advanceTimersByTime(WEATHER_REFRESH_MS);
+    // Let the weather promise resolve before rendering.
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+
+    expect(query(el, 'footer .weather-icon svg', SVGElement).innerHTML).not.toBe(before);
+  });
+
+  it('leaves out the weather icon for unknown conditions', async () => {
+    current.mockResolvedValue({ ...MAINLY_CLEAR, description: '', condition: 'unknown' });
+    await loadSettings();
+    expect(el.querySelector('footer .weather-icon')).toBeNull();
+    expect(text(el, 'footer span:nth-last-child(2)')).toBe('21°');
   });
 
   it('applies the theme from the settings', async () => {

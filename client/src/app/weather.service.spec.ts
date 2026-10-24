@@ -17,23 +17,47 @@ describe('WeatherService', () => {
     http.verify();
   });
 
-  function respond(weatherCode: number): void {
+  function respond(weatherCode: number, isDay: 0 | 1 = 1): void {
     const req = http.expectOne((r) => r.url === OPEN_METEO_URL);
     expect(req.request.params.get('latitude')).toBe('38.72');
     expect(req.request.params.get('longitude')).toBe('-9.14');
-    expect(req.request.params.get('current')).toBe('temperature_2m,weather_code');
-    req.flush({ current: { temperature_2m: 13.6, weather_code: weatherCode } });
+    expect(req.request.params.get('current')).toBe('temperature_2m,weather_code,is_day');
+    req.flush({ current: { temperature_2m: 13.6, weather_code: weatherCode, is_day: isDay } });
   }
 
-  it('returns the rounded temperature and a description', async () => {
+  it('returns the rounded temperature, description and condition', async () => {
     const weather = service.current(38.72, -9.14);
     respond(3);
-    expect(await weather).toEqual({ temperature: 14, description: 'Overcast' });
+    expect(await weather).toEqual({
+      temperature: 14,
+      description: 'Overcast',
+      condition: 'cloudy',
+      isDay: true,
+    });
   });
 
-  it('uses an empty description for unknown weather codes', async () => {
+  it('reports night time', async () => {
+    const weather = service.current(38.72, -9.14);
+    respond(0, 0);
+    expect(await weather).toMatchObject({ condition: 'clear', isDay: false });
+  });
+
+  it.each([
+    [45, 'fog'],
+    [56, 'drizzle'],
+    [66, 'rain'],
+    [81, 'showers'],
+    [86, 'snow'],
+    [99, 'thunderstorm'],
+  ])('maps weather code %i to %s', async (code, condition) => {
+    const weather = service.current(38.72, -9.14);
+    respond(code);
+    expect((await weather).condition).toBe(condition);
+  });
+
+  it('marks unknown weather codes as unknown with no description', async () => {
     const weather = service.current(38.72, -9.14);
     respond(42);
-    expect(await weather).toEqual({ temperature: 14, description: '' });
+    expect(await weather).toMatchObject({ description: '', condition: 'unknown' });
   });
 });

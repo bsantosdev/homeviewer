@@ -8,15 +8,18 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { StopWatchIcon } from '@hugeicons/core-free-icons';
 import { SettingsService } from '../settings.service';
 import { Timer } from '../timer/timer';
+import { weatherIconFor } from '../weather-icons';
 import { Weather, WeatherService } from '../weather.service';
 
 export const WEATHER_REFRESH_MS = 15 * 60 * 1000;
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, Timer],
+  imports: [DatePipe, HugeiconsIconComponent, Timer],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -31,6 +34,8 @@ export class Dashboard {
   protected readonly isDark = computed(() => (this.settings()?.theme ?? 'dark') === 'dark');
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
+  protected readonly weatherIconFor = weatherIconFor;
+  protected readonly timerIcon = StopWatchIcon;
   protected readonly timerOpen = signal(false);
 
   private readonly location = computed(() => {
