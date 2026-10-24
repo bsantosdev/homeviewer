@@ -38,6 +38,14 @@ describe('SettingsService', () => {
     expect(service.settings()).toEqual(TEST_SETTINGS);
   });
 
+  it('is dark until the settings choose the light theme', () => {
+    const service = create();
+    expect(service.isDark()).toBe(true);
+
+    http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, theme: 'light' });
+    expect(service.isDark()).toBe(false);
+  });
+
   it('applies settings pushed through the hub', () => {
     const service = create();
     http.expectOne('/api/settings').flush(TEST_SETTINGS);

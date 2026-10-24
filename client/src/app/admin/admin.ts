@@ -7,11 +7,17 @@ import { DashboardSettings, SettingsService } from '../settings.service';
   selector: 'app-admin',
   imports: [FormsModule, RouterLink],
   templateUrl: './admin.html',
+  styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'mx-auto block max-w-[480px] px-4 py-6 text-base' },
+  host: {
+    class:
+      'block min-h-full bg-[#f7f7f5] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
+    '[class.dark]': 'isDark()',
+  },
 })
 export class Admin {
   private readonly service = inject(SettingsService);
+  protected readonly isDark = this.service.isDark;
   protected readonly form = signal<DashboardSettings | null>(null);
   protected readonly status = signal('');
 

@@ -30,8 +30,9 @@ export const WEATHER_REFRESH_MS = 15 * 60 * 1000;
 })
 export class Dashboard {
   private readonly weatherService = inject(WeatherService);
-  protected readonly settings = inject(SettingsService).settings;
-  protected readonly isDark = computed(() => (this.settings()?.theme ?? 'dark') === 'dark');
+  private readonly settingsService = inject(SettingsService);
+  protected readonly settings = this.settingsService.settings;
+  protected readonly isDark = this.settingsService.isDark;
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;

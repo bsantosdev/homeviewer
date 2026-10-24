@@ -16,6 +16,7 @@ The main screen is an iPad mini 2 (A1489) that can't update past iOS 12.5.7, whi
 - Standalone components, signals, `OnPush` change detection, built-in control flow (`@if`/`@for`), and `inject()`. Strict ESLint enforces these.
 - Icons come from Hugeicons: `<hugeicons-icon>` from `@hugeicons/angular`, with icons imported one at a time from `@hugeicons/core-free-icons`. Never import the whole set. Size icons with Tailwind classes, and use `currentColor` so they follow the theme.
 - Style with Tailwind utilities in templates. Use a component `.scss` file only for vendor-specific CSS or shared `@apply` classes.
+- Theme: `SettingsService.isDark` drives a `dark` class on each page's host. In templates, `dark:` utilities work. In a component `.scss`, `@apply dark:...` never matches, because view encapsulation scopes it, so write `:host(.dark) .x { @apply ... }` instead.
 - Tests: Vitest through `ng test`, written "act, wait, assert" (`await fixture.whenStable()`, not `detectChanges()`). The helpers in `src/testing/test-helpers.ts` include a fake SignalR hub and `HttpTestingController` setup. `vi.mock` doesn't work with Angular's test builder, so inject dependencies instead (see `SETTINGS_HUB`).
 - Coverage must stay at 95% or higher (statements, branches, functions, lines). It's currently about 99%.
 

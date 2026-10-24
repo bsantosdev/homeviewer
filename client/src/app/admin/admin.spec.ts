@@ -82,6 +82,24 @@ describe('Admin', () => {
     expect(text(el, 'form span')).toBe('Save failed');
   });
 
+  it('follows the saved theme', async () => {
+    await loadSettings();
+    expect(el.classList).toContain('dark');
+
+    const select = query(el, '[name=theme]', HTMLSelectElement);
+    select.value = 'light';
+    select.dispatchEvent(new Event('change'));
+    await submit();
+    // Unsaved choices don't change the page.
+    expect(el.classList).toContain('dark');
+
+    http
+      .expectOne({ method: 'PUT', url: '/api/settings' })
+      .flush({ ...TEST_SETTINGS, theme: 'light' });
+    await settle();
+    expect(el.classList).not.toContain('dark');
+  });
+
   it('keeps the form when new settings arrive later', async () => {
     await loadSettings();
     await type('[name=title]', 'Kitchen');
