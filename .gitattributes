@@ -1,0 +1,4 @@
+# Keep LF in the repo so Prettier's check passes on Linux CI regardless of core.autocrlf.
+* text=auto eol=lf
+*.png binary
+*.ico binary

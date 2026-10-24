@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  client:
+    name: Client (format, lint, tests, legacy build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - run: npm ci
+
+      # Prettier check, strict ESLint, Vitest with the 95% coverage gate,
+      # then the iOS 12 build (Babel transpile + legacy CSS check).
+      - run: npm run check
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: client-coverage
+          path: client/coverage
+          if-no-files-found: ignore
+
+  server:
+    name: Server (build and tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - run: dotnet build HomeViewer.slnx
+
+      # Fails if line, branch or method coverage drops below 95%.
+      - run: dotnet test server/HomeViewer.Api.Tests --no-build -p:CollectCoverage=true
