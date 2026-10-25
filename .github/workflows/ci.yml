@@ -54,3 +54,61 @@ jobs:
 
       # Fails if line, branch or method coverage drops below 95%.
       - run: dotnet test server/HomeViewer.Api.Tests --no-build -p:CollectCoverage=true
+
+  sonar:
+    name: SonarQube Cloud analysis
+    needs: client
+    runs-on: ubuntu-latest
+    # Fork PRs don't get SONAR_TOKEN, so skip them instead of failing.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      # dotnet-sonarscanner targets an older runtime than .NET 10.
+      DOTNET_ROLL_FORWARD: Major
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history so Sonar can tell new code from old.
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      # Reuse the lcov report from the client job instead of rerunning the tests.
+      - uses: actions/download-artifact@v5
+        with:
+          name: client-coverage
+          path: client/coverage
+
+      # lcov paths are relative to client/, but Sonar resolves them from the repo root.
+      - run: sed -i 's#^SF:#SF:client/#' client/coverage/client/lcov.info
+
+      - run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Begin analysis
+        run: >
+          dotnet sonarscanner begin
+          /k:"bsantosdev_homeviewer"
+          /o:"bsantosdev"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.token="$SONAR_TOKEN"
+          /d:sonar.cs.opencover.reportsPaths="server/HomeViewer.Api.Tests/TestResults/coverage.opencover.xml"
+          /d:sonar.javascript.lcov.reportPaths="client/coverage/client/lcov.info"
+          /d:sonar.exclusions="**/node_modules/**,client/coverage/**,client/.angular/**,server/HomeViewer.Api/wwwroot/**"
+          /d:sonar.test.inclusions="client/src/**/*.spec.ts,client/src/testing/**"
+          /d:sonar.qualitygate.wait=true
+
+      - run: dotnet build HomeViewer.slnx
+
+      # Sonar's C# coverage import reads OpenCover, not the cobertura the project defaults to.
+      - run: dotnet test server/HomeViewer.Api.Tests --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=opencover
+
+      # Uploads the results and fails the job if the quality gate fails.
+      # SonarQube Cloud also posts the summary comment on the PR.
+      - name: End analysis
+        run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
