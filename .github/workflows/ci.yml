@@ -101,12 +101,14 @@ jobs:
           /d:sonar.javascript.lcov.reportPaths="client/coverage/client/lcov.info"
           /d:sonar.exclusions="**/node_modules/**,client/coverage/**,client/.angular/**,server/HomeViewer.Api/wwwroot/**"
           /d:sonar.test.inclusions="client/src/**/*.spec.ts,client/src/testing/**"
+          /d:sonar.qualitygate.wait=true
 
       - run: dotnet build HomeViewer.slnx
 
       # Sonar's C# coverage import reads OpenCover, not the cobertura the project defaults to.
       - run: dotnet test server/HomeViewer.Api.Tests --no-build -p:CollectCoverage=true -p:CoverletOutputFormat=opencover
 
-      # Uploads the results; SonarQube Cloud then posts the summary comment on the PR.
+      # Uploads the results and fails the job if the quality gate fails.
+      # SonarQube Cloud also posts the summary comment on the PR.
       - name: End analysis
         run: dotnet sonarscanner end /d:sonar.token="$SONAR_TOKEN"
