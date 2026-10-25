@@ -1,6 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { Dashboard, WEATHER_REFRESH_MS } from './dashboard';
+import { Dashboard, EVENTS_REFRESH_MS, WEATHER_REFRESH_MS } from './dashboard';
+import { CalendarEvent, CalendarService } from '../calendar.service';
 import { SettingsService } from '../settings.service';
 import { Weather, WeatherService } from '../weather.service';
 import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/test-helpers';
@@ -14,19 +15,30 @@ const MAINLY_CLEAR: Weather = {
   isDay: true,
 };
 
+const WITH_CALENDAR = {
+  ...TEST_SETTINGS,
+  calendars: [{ name: 'Family', url: 'https://a.example/a.ics', color: '#ef4444' }],
+};
+
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let el: HTMLElement;
   let current: ReturnType<typeof vi.fn<(lat: number, lon: number) => Promise<Weather>>>;
+  let events: ReturnType<typeof vi.fn<(from: Date, to: Date) => Promise<CalendarEvent[]>>>;
 
   beforeEach(() => {
     // Fake only the clocks the component uses; Angular's scheduler keeps real timeouts.
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date(2026, 9, 23, 14, 5));
     current = vi.fn().mockResolvedValue(MAINLY_CLEAR);
+    events = vi.fn().mockResolvedValue([]);
 
     TestBed.configureTestingModule({
-      providers: [...provideTestBackend(), { provide: WeatherService, useValue: { current } }],
+      providers: [
+        ...provideTestBackend(),
+        { provide: WeatherService, useValue: { current } },
+        { provide: CalendarService, useValue: { events } },
+      ],
     });
     fixture = TestBed.createComponent(Dashboard);
     el = fixture.nativeElement as HTMLElement;
@@ -155,9 +167,161 @@ describe('Dashboard', () => {
   });
 
   it('stops its timers when destroyed', async () => {
-    await loadSettings();
+    await loadSettings(WITH_CALENDAR);
     fixture.destroy();
     vi.advanceTimersByTime(WEATHER_REFRESH_MS);
     expect(current).toHaveBeenCalledTimes(1);
+    expect(events).toHaveBeenCalledTimes(1);
+  });
+
+  describe('calendar', () => {
+    // Let the events promise resolve before rendering.
+    async function settle(): Promise<void> {
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+    }
+
+    function sections(): string[] {
+      return Array.from(el.querySelectorAll('.agenda section'), (section) =>
+        Array.from(section.querySelectorAll('h2, span, p'), (n) => n.textContent.trim()).join(' '),
+      );
+    }
+
+    it('is hidden when no calendars are configured', async () => {
+      await loadSettings();
+      expect(el.querySelector('.agenda')).toBeNull();
+      expect(events).not.toHaveBeenCalled();
+    });
+
+    it('shows the events for today and tomorrow', async () => {
+      events.mockResolvedValue([
+        {
+          title: 'Football',
+          calendar: 'Family',
+          color: '#ef4444',
+          allDay: false,
+          start: new Date(2026, 9, 23, 17, 0).toISOString(),
+          end: new Date(2026, 9, 23, 18, 30).toISOString(),
+        },
+        {
+          title: 'Market',
+          calendar: 'Family',
+          color: '#ef4444',
+          allDay: true,
+          start: '2026-10-24',
+          end: '2026-10-25',
+        },
+      ]);
+
+      await loadSettings(WITH_CALENDAR);
+      await settle();
+
+      // Local midnight today until the day after tomorrow.
+      expect(events).toHaveBeenCalledWith(new Date(2026, 9, 23), new Date(2026, 9, 25));
+      expect(sections()).toEqual(['Today 17:00 Football Family', 'Tomorrow All day Market Family']);
+    });
+
+    it("badges each event with its calendar's name and colour", async () => {
+      events.mockResolvedValue([
+        {
+          title: 'Standup',
+          calendar: 'Work',
+          color: '#1e3a8a',
+          allDay: false,
+          start: new Date(2026, 9, 23, 17, 0).toISOString(),
+          end: new Date(2026, 9, 23, 17, 15).toISOString(),
+        },
+      ]);
+
+      await loadSettings(WITH_CALENDAR);
+      await settle();
+
+      const badge = query(el, '.agenda .calendar-badge');
+      expect(badge.textContent.trim()).toBe('Work');
+      expect(badge.style.backgroundColor).toBe('rgb(30, 58, 138)');
+      expect(badge.style.color).toBe('rgb(255, 255, 255)');
+    });
+
+    it('says when a day has nothing planned or more than fits', async () => {
+      events.mockResolvedValue(
+        Array.from({ length: 6 }, (_, i) => ({
+          title: `Event ${String(i)}`,
+          calendar: 'Family',
+          color: '#ef4444',
+          allDay: true,
+          start: '2026-10-24',
+          end: '2026-10-25',
+        })),
+      );
+
+      await loadSettings(WITH_CALENDAR);
+      await settle();
+
+      expect(text(el, '.agenda section:first-child p')).toBe('Nothing planned');
+      expect(text(el, '.agenda section:last-child p')).toBe('+2 more');
+    });
+
+    it('refreshes periodically and when the calendar links change', async () => {
+      await loadSettings(WITH_CALENDAR);
+      expect(events).toHaveBeenCalledTimes(1);
+
+      vi.advanceTimersByTime(EVENTS_REFRESH_MS);
+      await fixture.whenStable();
+      expect(events).toHaveBeenCalledTimes(2);
+
+      const settings = TestBed.inject(SettingsService).settings;
+      settings.set({ ...WITH_CALENDAR, title: 'Kitchen' });
+      await fixture.whenStable();
+      expect(events).toHaveBeenCalledTimes(2);
+
+      settings.set({
+        ...WITH_CALENDAR,
+        calendars: [{ name: 'Work', url: 'https://b.example/b.ics', color: '#10b981' }],
+      });
+      await fixture.whenStable();
+      expect(events).toHaveBeenCalledTimes(3);
+    });
+
+    it('clears the events when the calendars are removed', async () => {
+      events.mockResolvedValue([
+        {
+          title: 'Market',
+          calendar: 'Family',
+          color: '#ef4444',
+          allDay: true,
+          start: '2026-10-23',
+          end: '2026-10-24',
+        },
+      ]);
+      await loadSettings(WITH_CALENDAR);
+      await settle();
+
+      TestBed.inject(SettingsService).settings.set(TEST_SETTINGS);
+      await fixture.whenStable();
+      vi.advanceTimersByTime(EVENTS_REFRESH_MS);
+      await fixture.whenStable();
+
+      expect(el.querySelector('.agenda')).toBeNull();
+      expect(events).toHaveBeenCalledTimes(1);
+    });
+
+    it('logs calendar errors and keeps running', async () => {
+      const error = new Error('offline');
+      events.mockRejectedValue(error);
+      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+      await loadSettings(WITH_CALENDAR);
+      await settle();
+
+      expect(log).toHaveBeenCalledWith('Calendar fetch failed', error);
+      expect(text(el, '.agenda section:first-child p')).toBe('Nothing planned');
+    });
+
+    it('makes way for the timer', async () => {
+      await loadSettings(WITH_CALENDAR);
+      query(el, 'button[aria-label="Timer"]', HTMLButtonElement).click();
+      await fixture.whenStable();
+      expect(el.querySelector('.agenda')).toBeNull();
+    });
   });
 });

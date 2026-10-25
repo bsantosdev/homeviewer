@@ -21,6 +21,34 @@
     } @else {
       <div class="text-clock font-extralight tabular-nums">{{ now() | date: 'HH:mm' }}</div>
       <div class="text-vh-4 opacity-80">{{ now() | date: 'EEEE, d MMMM' }}</div>
+      @if (hasCalendars()) {
+        <div class="agenda mt-[4vh] flex justify-center text-left text-vh-3">
+          @for (day of agenda(); track day.label) {
+            <section class="ml-[4vw] w-[40vw] first:ml-0">
+              <h2 class="mb-[0.8vh] text-vh-3 font-semibold uppercase tracking-wide opacity-60">
+                {{ day.label }}
+              </h2>
+              @for (item of day.items; track $index) {
+                <div class="flex items-baseline leading-snug">
+                  <span class="w-[14vh] shrink-0 tabular-nums opacity-70">{{ item.time }}</span>
+                  <span class="min-w-0 truncate">{{ item.title }}</span>
+                  <span
+                    class="calendar-badge ml-[1vh] shrink-0 rounded-full px-[1vh] text-[2.2vh] font-medium"
+                    [style.background-color]="item.color"
+                    [style.color]="item.textColor"
+                    >{{ item.calendar }}</span
+                  >
+                </div>
+              } @empty {
+                <p class="opacity-50">Nothing planned</p>
+              }
+              @if (day.more) {
+                <p class="opacity-50">+{{ day.more }} more</p>
+              }
+            </section>
+          }
+        </div>
+      }
     }
   </main>
 

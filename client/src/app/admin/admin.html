@@ -38,6 +38,58 @@
           />
         </label>
       </div>
+      <fieldset class="mb-5">
+        <legend class="mb-1">Outlook calendars</legend>
+        <p class="mb-2 text-sm opacity-70">
+          In Outlook on the web: Settings → Calendar → Shared calendars → Publish a calendar. Copy
+          the ICS link.
+        </p>
+        @for (calendar of f.calendars; track $index; let i = $index) {
+          <div class="calendar mb-2 flex items-end">
+            <label class="mr-2 flex w-28 flex-col text-sm">
+              Name
+              <input
+                id="calendar-name-{{ i }}"
+                class="field"
+                name="calendarName{{ i }}"
+                [(ngModel)]="calendar.name"
+              />
+            </label>
+            <label class="mr-2 flex flex-col text-sm">
+              Colour
+              <input
+                id="calendar-color-{{ i }}"
+                class="field h-[42px] w-12 cursor-pointer p-1"
+                name="calendarColor{{ i }}"
+                type="color"
+                [(ngModel)]="calendar.color"
+              />
+            </label>
+            <label class="mr-2 flex min-w-0 flex-1 flex-col text-sm">
+              ICS link
+              <input
+                id="calendar-url-{{ i }}"
+                class="field"
+                name="calendarUrl{{ i }}"
+                type="url"
+                placeholder="https://outlook.live.com/…/calendar.ics"
+                [(ngModel)]="calendar.url"
+              />
+            </label>
+            <button
+              type="button"
+              class="mb-1 rounded px-2 py-2 text-sm underline"
+              [attr.aria-label]="'Remove ' + (calendar.name || 'calendar')"
+              (click)="removeCalendar(f, i)"
+            >
+              Remove
+            </button>
+          </div>
+        }
+        <button type="button" class="text-sm underline" (click)="addCalendar(f)">
+          Add calendar
+        </button>
+      </fieldset>
       <div class="flex items-center">
         <button
           type="submit"

@@ -15,7 +15,7 @@ public sealed class SettingsStoreTests : IDisposable
     {
         var store = new SettingsStore(SettingsPath);
 
-        Assert.Equal(DashboardSettings.Default, store.Get());
+        Assert.Same(DashboardSettings.Default, store.Get());
         Assert.False(File.Exists(SettingsPath));
     }
 
@@ -27,7 +27,7 @@ public sealed class SettingsStoreTests : IDisposable
         new SettingsStore(SettingsPath).Save(settings);
 
         Assert.True(File.Exists(SettingsPath));
-        Assert.Equal(settings, new SettingsStore(SettingsPath).Get());
+        Assert.Equivalent(settings, new SettingsStore(SettingsPath).Get(), strict: true);
     }
 
     [Fact]
@@ -55,6 +55,34 @@ public sealed class SettingsStoreTests : IDisposable
         Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
         File.WriteAllText(SettingsPath, "null");
 
-        Assert.Equal(DashboardSettings.Default, new SettingsStore(SettingsPath).Get());
+        Assert.Same(DashboardSettings.Default, new SettingsStore(SettingsPath).Get());
+    }
+
+    [Fact]
+    public void Gives_calendars_saved_before_colours_existed_the_default_colour()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        File.WriteAllText(SettingsPath, """
+            {"title":"Old","message":"","theme":"dark","locationName":"Lisbon","latitude":1,"longitude":2,
+             "calendars":[{"name":"Family","url":"https://outlook.example/a.ics"}]}
+            """);
+
+        var calendar = Assert.Single(new SettingsStore(SettingsPath).Get().Calendars);
+
+        Assert.Equal(CalendarFeed.DefaultColor, calendar.Color);
+    }
+
+    [Fact]
+    public void Loads_settings_saved_before_calendars_existed()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(SettingsPath)!);
+        File.WriteAllText(SettingsPath, """
+            {"title":"Old","message":"","theme":"dark","locationName":"Lisbon","latitude":1,"longitude":2}
+            """);
+
+        var settings = new SettingsStore(SettingsPath).Get();
+
+        Assert.Equal("Old", settings.Title);
+        Assert.Empty(settings.Calendars);
     }
 }
