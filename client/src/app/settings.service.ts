@@ -11,6 +11,15 @@ export interface DashboardSettings {
   locationName: string;
   latitude: number;
   longitude: number;
+  calendars: CalendarFeed[];
+}
+
+/** A published Outlook (ICS) calendar. The server downloads it; the link stays private to the home network. */
+export interface CalendarFeed {
+  name: string;
+  url: string;
+  /** Badge colour on the dashboard, as "#rrggbb". */
+  color: string;
 }
 
 /** The parts of the SignalR connection the service uses; replaceable in tests. */

@@ -9,6 +9,7 @@ export const TEST_SETTINGS: DashboardSettings = {
   locationName: 'Lisbon',
   latitude: 38.72,
   longitude: -9.14,
+  calendars: [],
 };
 
 /** A stand-in for the SignalR connection that lets tests fire hub events. */

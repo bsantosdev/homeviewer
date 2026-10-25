@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { Admin } from './admin';
+import { Admin, CALENDAR_COLORS } from './admin';
 import { SettingsService } from '../settings.service';
 import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 
@@ -98,6 +98,82 @@ describe('Admin', () => {
       .flush({ ...TEST_SETTINGS, theme: 'light' });
     await settle();
     expect(el.classList).not.toContain('dark');
+  });
+
+  it('adds, edits and removes calendars', async () => {
+    await loadSettings();
+    button(el, 'Add calendar').click();
+    await fixture.whenStable();
+    button(el, 'Add calendar').click();
+    await fixture.whenStable();
+    await type('#calendar-name-0', 'Family');
+    await type('#calendar-url-0', 'webcal://outlook.example/a.ics');
+    await type('#calendar-color-0', '#10b981');
+    await type('#calendar-name-1', 'Work');
+
+    query(el, 'button[aria-label="Remove Work"]', HTMLButtonElement).click();
+    await fixture.whenStable();
+    expect(el.querySelectorAll('.calendar').length).toBe(1);
+
+    await submit();
+    const saved = {
+      ...TEST_SETTINGS,
+      calendars: [{ name: 'Family', url: 'webcal://outlook.example/a.ics', color: '#10b981' }],
+    };
+    const req = http.expectOne({ method: 'PUT', url: '/api/settings' });
+    expect(req.request.body).toEqual(saved);
+    req.flush(saved);
+    await settle();
+    expect(TestBed.inject(SettingsService).settings()).toEqual(saved);
+  });
+
+  it('gives new calendars colours in turn', async () => {
+    await loadSettings();
+    for (let i = 0; i <= CALENDAR_COLORS.length; i++) {
+      button(el, 'Add calendar').click();
+      await fixture.whenStable();
+    }
+
+    const colors = Array.from(
+      el.querySelectorAll<HTMLInputElement>('.calendar input[type=color]'),
+      (input) => input.value,
+    );
+    expect(colors).toEqual([...CALENDAR_COLORS, CALENDAR_COLORS[0]]);
+  });
+
+  it('labels the remove button of an unnamed calendar', async () => {
+    await loadSettings();
+    button(el, 'Add calendar').click();
+    await fixture.whenStable();
+    expect(el.querySelector('button[aria-label="Remove calendar"]')).not.toBeNull();
+  });
+
+  it('edits calendars without touching the live settings', async () => {
+    http.expectOne('/api/settings').flush({
+      ...TEST_SETTINGS,
+      calendars: [{ name: 'Family', url: 'https://a.example', color: '#3b82f6' }],
+    });
+    await fixture.whenStable();
+
+    await type('#calendar-name-0', 'Changed');
+
+    expect(TestBed.inject(SettingsService).settings()?.calendars[0].name).toBe('Family');
+  });
+
+  it('shows the reason when the server rejects the settings', async () => {
+    await loadSettings();
+    await submit();
+    http
+      .expectOne({ method: 'PUT', url: '/api/settings' })
+      .flush('Calendar "Family" needs an https:// or webcal:// link.', {
+        status: 400,
+        statusText: 'Bad Request',
+      });
+    await settle();
+
+    expect(text(el, 'form span')).toBe(
+      'Save failed: Calendar "Family" needs an https:// or webcal:// link.',
+    );
   });
 
   it('keeps the form when new settings arrive later', async () => {

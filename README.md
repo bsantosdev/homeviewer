@@ -62,6 +62,18 @@ New-NetFirewallRule -DisplayName "HomeViewer" -Direction Inbound -Protocol TCP -
 
 The dashboard reconnects automatically and fetches the settings again after the iPad wakes from sleep.
 
+## Outlook calendars
+
+The dashboard lists today's and tomorrow's events below the clock.
+
+1. In Outlook on the web, go to **Settings → Calendar → Shared calendars → Publish a calendar**. Pick the calendar and how much to share. "Can view titles and locations" is enough; "Can view when I'm busy" shows every event as "Busy".
+2. Copy the **ICS** link (not the HTML one).
+3. In `/admin`, choose **Add calendar**, give it a name, pick a colour, paste the link and save. Repeat for each calendar.
+
+Each event on the dashboard gets a badge with its calendar's name in that colour. The badge text is black or white, whichever is easier to read on the colour.
+
+The server downloads each calendar at most every 5 minutes, and the dashboard refreshes every 5 minutes. Anyone with a published link can read that calendar, so treat it like a password. It's stored in `data/settings.json` and visible to anyone who can open `/admin` on your network. To revoke a link, unpublish the calendar in Outlook.
+
 ## Notes
 
 - `/admin` has no authentication. Only use HomeViewer on a trusted network.
