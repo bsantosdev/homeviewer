@@ -9,9 +9,11 @@ import {
   signal,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { StopWatchIcon } from '@hugeicons/core-free-icons';
+import { BulbIcon, StopWatchIcon } from '@hugeicons/core-free-icons';
 import { agenda, startOfDay } from '../agenda';
 import { CalendarEvent, CalendarService } from '../calendar.service';
+import { LightsService } from '../lights.service';
+import { Lights } from '../lights/lights';
 import { SettingsService } from '../settings.service';
 import { Timer } from '../timer/timer';
 import { weatherIconFor } from '../weather-icons';
@@ -19,10 +21,15 @@ import { Weather, WeatherService } from '../weather.service';
 
 export const WEATHER_REFRESH_MS = 1 * 60 * 1000;
 export const EVENTS_REFRESH_MS = 1 * 60 * 1000;
+// Often enough to pick up lights switched from the Hue app or a wall switch.
+export const LIGHTS_REFRESH_MS = 15 * 1000;
+
+/** What replaces the clock in the middle of the screen. */
+type Panel = 'timer' | 'lights';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, HugeiconsIconComponent, Timer],
+  imports: [DatePipe, HugeiconsIconComponent, Lights, Timer],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -35,13 +42,17 @@ export class Dashboard {
   private readonly weatherService = inject(WeatherService);
   private readonly calendarService = inject(CalendarService);
   private readonly settingsService = inject(SettingsService);
+  private readonly lightsService = inject(LightsService);
   protected readonly settings = this.settingsService.settings;
   protected readonly isDark = this.settingsService.isDark;
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;
   protected readonly timerIcon = StopWatchIcon;
-  protected readonly timerOpen = signal(false);
+  protected readonly lightsIcon = BulbIcon;
+  protected readonly panel = signal<Panel | null>(null);
+  /** The lights button only shows once the server says a Hue bridge is set up. */
+  protected readonly hasLights = computed(() => this.lightsService.rooms() !== null);
   protected readonly hasCalendars = computed(() => !!this.settings()?.calendars.length);
   private readonly events = signal<CalendarEvent[]>([]);
   protected readonly agenda = computed(() => agenda(this.events(), this.now()));
@@ -68,10 +79,14 @@ export class Dashboard {
     const eventsTimer = setInterval(() => {
       void this.loadEvents();
     }, EVENTS_REFRESH_MS);
+    const lightsTimer = setInterval(() => {
+      void this.lightsService.load();
+    }, LIGHTS_REFRESH_MS);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(clock);
       clearInterval(weatherTimer);
       clearInterval(eventsTimer);
+      clearInterval(lightsTimer);
     });
 
     // Reload weather whenever the location changes (including the first load).
@@ -81,10 +96,13 @@ export class Dashboard {
     effect(() => {
       if (this.calendarUrls() !== undefined) void this.loadEvents();
     });
+    void this.lightsService.load();
   }
 
-  protected toggleTimer(): void {
-    this.timerOpen.update((open) => !open);
+  protected toggle(panel: Panel): void {
+    this.panel.update((open) => (open === panel ? null : panel));
+    // Show the current state when the lights open, not what it was at the last refresh.
+    if (this.panel() === 'lights') void this.lightsService.load();
   }
 
   private async loadWeather(): Promise<void> {

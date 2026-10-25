@@ -1,7 +1,9 @@
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { Dashboard, EVENTS_REFRESH_MS, WEATHER_REFRESH_MS } from './dashboard';
+import { Dashboard, EVENTS_REFRESH_MS, LIGHTS_REFRESH_MS, WEATHER_REFRESH_MS } from './dashboard';
 import { CalendarEvent, CalendarService } from '../calendar.service';
+import { LightsService, Room } from '../lights.service';
 import { SettingsService } from '../settings.service';
 import { Weather, WeatherService } from '../weather.service';
 import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/test-helpers';
@@ -25,6 +27,8 @@ describe('Dashboard', () => {
   let el: HTMLElement;
   let current: ReturnType<typeof vi.fn<(lat: number, lon: number) => Promise<Weather>>>;
   let events: ReturnType<typeof vi.fn<(from: Date, to: Date) => Promise<CalendarEvent[]>>>;
+  let rooms: ReturnType<typeof signal<Room[] | null>>;
+  let loadLights: ReturnType<typeof vi.fn<() => Promise<void>>>;
 
   beforeEach(() => {
     // Fake only the clocks the component uses; Angular's scheduler keeps real timeouts.
@@ -32,12 +36,15 @@ describe('Dashboard', () => {
     vi.setSystemTime(new Date(2026, 9, 23, 14, 5));
     current = vi.fn().mockResolvedValue(MAINLY_CLEAR);
     events = vi.fn().mockResolvedValue([]);
+    rooms = signal<Room[] | null>(null);
+    loadLights = vi.fn().mockResolvedValue(undefined);
 
     TestBed.configureTestingModule({
       providers: [
         ...provideTestBackend(),
         { provide: WeatherService, useValue: { current } },
         { provide: CalendarService, useValue: { events } },
+        { provide: LightsService, useValue: { rooms, load: loadLights } },
       ],
     });
     fixture = TestBed.createComponent(Dashboard);
@@ -172,6 +179,83 @@ describe('Dashboard', () => {
     vi.advanceTimersByTime(WEATHER_REFRESH_MS);
     expect(current).toHaveBeenCalledTimes(1);
     expect(events).toHaveBeenCalledTimes(1);
+    expect(loadLights).toHaveBeenCalledTimes(1);
+  });
+
+  describe('lights', () => {
+    const KITCHEN: Room = {
+      id: 'kitchen-id',
+      name: 'Kitchen',
+      on: true,
+      brightness: 80,
+      colors: [],
+      temperature: null,
+      canColor: false,
+    };
+
+    function lightsButton(): HTMLButtonElement | null {
+      return el.querySelector<HTMLButtonElement>('button[aria-label="Lights"]');
+    }
+
+    it('hides the lights button while no Hue bridge is set up', async () => {
+      await loadSettings();
+      expect(loadLights).toHaveBeenCalledTimes(1);
+      expect(lightsButton()).toBeNull();
+    });
+
+    it('opens the lights in place of the clock and fetches their current state', async () => {
+      rooms.set([KITCHEN]);
+      await loadSettings();
+      const toggle = lightsButton();
+      expect(toggle?.classList).toContain('opacity-75');
+
+      toggle?.click();
+      await fixture.whenStable();
+      expect(el.querySelector('app-lights')).not.toBeNull();
+      expect(el.querySelector('.text-clock')).toBeNull();
+      expect(toggle?.classList).toContain('opacity-100');
+      expect(loadLights).toHaveBeenCalledTimes(2);
+
+      toggle?.click();
+      await fixture.whenStable();
+      expect(el.querySelector('app-lights')).toBeNull();
+      expect(text(el, 'main div')).toBe('14:05');
+      expect(loadLights).toHaveBeenCalledTimes(2);
+    });
+
+    it('shows one panel at a time', async () => {
+      rooms.set([KITCHEN]);
+      await loadSettings();
+
+      lightsButton()?.click();
+      await fixture.whenStable();
+      query(el, 'button[aria-label="Timer"]', HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(el.querySelector('app-timer')).not.toBeNull();
+      expect(el.querySelector('app-lights')).toBeNull();
+      expect(lightsButton()?.classList).toContain('opacity-75');
+    });
+
+    it('goes back to the clock if the bridge goes away', async () => {
+      rooms.set([KITCHEN]);
+      await loadSettings();
+      lightsButton()?.click();
+      await fixture.whenStable();
+
+      rooms.set(null);
+      await fixture.whenStable();
+
+      expect(lightsButton()).toBeNull();
+      expect(el.querySelector('app-lights')).toBeNull();
+      expect(text(el, 'main div')).toBe('14:05');
+    });
+
+    it('refreshes the lights periodically', async () => {
+      await loadSettings();
+      vi.advanceTimersByTime(LIGHTS_REFRESH_MS);
+      expect(loadLights).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('calendar', () => {

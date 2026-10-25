@@ -1,0 +1,81 @@
+<div class="fixed bottom-0 left-0 right-0 top-0 z-10 flex items-center justify-center">
+  <!-- Tapping the dimmed backdrop around the panel closes the sheet. -->
+  <button
+    type="button"
+    class="backdrop absolute bottom-0 left-0 right-0 top-0 cursor-default bg-black/60"
+    aria-label="Close"
+    tabindex="-1"
+    (click)="closed.emit()"
+  ></button>
+  <div
+    class="panel relative max-h-[88vh] w-[80vw] overflow-y-auto rounded-[3vh] bg-[#f7f7f5] p-[3vh] text-left text-vh-3 [-webkit-overflow-scrolling:touch] dark:bg-[#1c1c1c]"
+    role="dialog"
+    [attr.aria-label]="room().name"
+  >
+    <div class="mb-[2vh] flex items-center">
+      <h2 class="min-w-0 flex-1 truncate text-vh-4 font-semibold">{{ room().name }}</h2>
+      <button
+        type="button"
+        class="close h-[6vh] w-[6vh] shrink-0 p-[1.2vh] opacity-70 [-webkit-tap-highlight-color:transparent]"
+        aria-label="Close"
+        (click)="closed.emit()"
+      >
+        <hugeicons-icon class="block h-full w-full" [icon]="closeIcon" [strokeWidth]="2" />
+      </button>
+    </div>
+
+    <h3 class="mb-[1vh] text-vh-2.5 font-semibold uppercase tracking-wide opacity-60">Scenes</h3>
+    <div class="scenes mb-[2.5vh] flex flex-wrap">
+      <!-- hasValue() first: reading value() of a resource that failed throws. -->
+      @if (scenes.hasValue()) {
+        @for (scene of scenes.value(); track scene.id) {
+          <button
+            type="button"
+            class="scene mb-[1.5vh] mr-[1.5vw] flex h-[11vh] w-[17vw] items-end overflow-hidden rounded-[2vh] bg-neutral-500/30 p-[1.5vh] text-left text-vh-2.5 font-semibold text-white [-webkit-tap-highlight-color:transparent] [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]"
+            [style.background]="scene.colors.length ? paint(scene.colors) : null"
+            (click)="recall(scene)"
+          >
+            <span class="min-w-0 truncate">{{ scene.name }}</span>
+          </button>
+        } @empty {
+          <p class="opacity-50">No scenes for this room in the Hue app.</p>
+        }
+      } @else if (scenes.error()) {
+        <p class="opacity-50">Couldn't load the scenes.</p>
+      } @else {
+        <p class="opacity-50">Loading scenes…</p>
+      }
+    </div>
+
+    <h3 class="mb-[1vh] text-vh-2.5 font-semibold uppercase tracking-wide opacity-60">White</h3>
+    <div class="mb-[2.5vh] flex items-center">
+      <span class="mr-[1.5vw] text-vh-2.5 opacity-70">Warm</span>
+      <input
+        type="range"
+        class="temperature min-w-0 flex-1"
+        step="100"
+        aria-label="Colour temperature"
+        [min]="minKelvin"
+        [max]="maxKelvin"
+        [value]="room().temperature ?? defaultKelvin"
+        (change)="setTemperature($event)"
+      />
+      <span class="ml-[1.5vw] text-vh-2.5 opacity-70">Cool</span>
+    </div>
+
+    @if (room().canColor) {
+      <h3 class="mb-[1vh] text-vh-2.5 font-semibold uppercase tracking-wide opacity-60">Colour</h3>
+      <div class="flex flex-wrap">
+        @for (swatch of swatches; track swatch.color) {
+          <button
+            type="button"
+            class="swatch mb-[1.5vh] mr-[1.5vw] h-[8vh] w-[8vh] rounded-full [-webkit-tap-highlight-color:transparent]"
+            [style.background-color]="swatch.color"
+            [attr.aria-label]="swatch.name"
+            (click)="setColor(swatch.color)"
+          ></button>
+        }
+      </div>
+    }
+  </div>
+</div>

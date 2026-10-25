@@ -26,6 +26,7 @@ module.exports = {
         'vh-4': '4vh',
         'vh-3.5': '3.5vh',
         'vh-3': '3vh',
+        'vh-2.5': '2.5vh',
       },
       keyframes: {
         flash: { to: { visibility: 'hidden' } },
