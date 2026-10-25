@@ -1,0 +1,24 @@
+<!-- Five tiles to a row; more than ten rooms scroll. Spacing is margins, not gap, for iOS 12. -->
+<div
+  class="mx-auto flex max-h-[68vh] w-[90vw] flex-wrap justify-center overflow-y-auto text-left text-vh-3 [-webkit-overflow-scrolling:touch]"
+>
+  @for (room of rooms(); track room.id) {
+    <!-- Swiping a room that's off turns it on, like the Hue app does. -->
+    <app-room-tile
+      class="room mx-[1vw] my-[1.5vh] h-[30vh] w-[16vw]"
+      [name]="room.name"
+      [on]="room.on"
+      [brightness]="room.brightness"
+      [colors]="room.colors"
+      (switched)="service.change(room.id, { on: $event })"
+      (dimming)="service.preview(room.id, { on: true, brightness: $event })"
+      (dimmed)="service.change(room.id, { on: true, brightness: $event })"
+      (opened)="openId.set(room.id)"
+    />
+  } @empty {
+    <p class="text-center opacity-50">No rooms with lights found on the Hue bridge.</p>
+  }
+</div>
+@if (openRoom(); as room) {
+  <app-room-sheet [room]="room" (closed)="openId.set(null)" />
+}

@@ -1,0 +1,50 @@
+<!-- While on, the tile takes the lights' colours: faint across the whole tile, strong up to the brightness. -->
+<button
+  #tile
+  type="button"
+  class="tile relative block h-full w-full overflow-hidden rounded-[2.5vh] text-left [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
+  [class]="on() ? 'text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]' : 'bg-neutral-500/15'"
+  [attr.aria-pressed]="on()"
+  [attr.aria-label]="name() + ', ' + status()"
+  (click)="tap()"
+  (keydown.arrowup)="step(keyStep, $event)"
+  (keydown.arrowdown)="step(-keyStep, $event)"
+  (touchstart)="touchStart($event)"
+  (touchmove)="touchMove($event)"
+  (touchend)="touchEnd($event)"
+  (touchcancel)="touchCancel()"
+  (mousedown)="mouseDown($event)"
+>
+  @if (on()) {
+    <span
+      class="tint absolute bottom-0 left-0 right-0 top-0 opacity-30"
+      [style.background]="paint()"
+    ></span>
+    <span
+      class="fill absolute bottom-0 left-0 right-0 opacity-90"
+      [style.background]="paint()"
+      [style.height.%]="brightness() ?? 100"
+    ></span>
+  }
+  <span class="relative flex h-full flex-col justify-between p-[2vh]">
+    <span class="inline-block h-[5vh] w-[5vh]" [class.opacity-50]="!on()" aria-hidden="true">
+      <hugeicons-icon class="block h-full w-full" [icon]="bulbIcon" [strokeWidth]="1.5" />
+    </span>
+    <span>
+      <span class="name block font-semibold leading-tight">{{ name() }}</span>
+      <span class="status mt-[0.5vh] block text-vh-2.5 tabular-nums opacity-80">{{
+        status()
+      }}</span>
+    </span>
+  </span>
+</button>
+<!-- A sibling, not inside the tile: a button can't hold another, and taps here mustn't switch the room. -->
+<button
+  type="button"
+  class="more absolute right-[1vh] top-[1vh] h-[6vh] w-[6vh] p-[1.3vh] opacity-80 [-webkit-tap-highlight-color:transparent]"
+  [class]="on() ? 'text-white' : ''"
+  [attr.aria-label]="name() + ' colours and scenes'"
+  (click)="opened.emit()"
+>
+  <hugeicons-icon class="block h-full w-full" [icon]="moreIcon" [strokeWidth]="2" />
+</button>

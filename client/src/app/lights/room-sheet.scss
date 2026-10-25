@@ -1,0 +1,16 @@
+// A big slider whose track runs from candlelight to daylight, so it explains itself.
+// The pseudo-elements are vendor-specific: WebKit (the iPad) and Firefox.
+.temperature {
+  -webkit-appearance: none;
+  @apply h-[3vh] cursor-pointer rounded-full;
+  background: linear-gradient(to right, #ff8912, #ffb46b, #ffe4ce, #fff9fd, #e3e9ff);
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    @apply h-[6vh] w-[6vh] rounded-full border-2 border-solid border-neutral-400 bg-white shadow;
+  }
+
+  &::-moz-range-thumb {
+    @apply h-[6vh] w-[6vh] rounded-full border-2 border-solid border-neutral-400 bg-white shadow;
+  }
+}
