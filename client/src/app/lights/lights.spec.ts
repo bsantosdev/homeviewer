@@ -218,6 +218,7 @@ describe('Lights', () => {
       touch('Living room', 'touchend');
 
       http.expectNone('/api/rooms/living-id');
+      expect(text(tile('Living room'), '.status')).toBe('60%');
     });
 
     it('does nothing on rooms that can only switch', async () => {
@@ -338,7 +339,8 @@ describe('Lights', () => {
 
       button(el, 'Relax').click();
 
-      http.expectOne({ method: 'POST', url: '/api/scenes/relax-id/recall' });
+      const req = http.expectOne({ method: 'POST', url: '/api/scenes/relax-id/recall' });
+      expect(req.request.body).toBeNull();
     });
 
     it('says while the scenes load, if there are none, and if they fail', async () => {

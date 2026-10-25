@@ -10,6 +10,8 @@
   <!-- Coverage gate, used by `dotnet test -p:CollectCoverage=true`. -->
   <PropertyGroup>
     <Include>[HomeViewer.Api]*</Include>
+    <!-- Source generators' output, such as [GeneratedRegex] matchers, isn't ours to test. -->
+    <ExcludeByFile>**/*.g.cs</ExcludeByFile>
     <Threshold>95</Threshold>
     <ThresholdType>line,branch,method</ThresholdType>
     <CoverletOutputFormat>cobertura</CoverletOutputFormat>

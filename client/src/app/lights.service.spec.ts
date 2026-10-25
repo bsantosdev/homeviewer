@@ -166,6 +166,7 @@ describe('LightsService', () => {
 
       vi.advanceTimersByTime(COLOR_REFRESH_MS);
       http.expectNone('/api/rooms');
+      expect(service.rooms()?.[0]).toEqual({ ...LIVING, on: true, brightness: 40 });
     });
 
     it('recalls a scene, then reloads the rooms', async () => {
@@ -175,7 +176,9 @@ describe('LightsService', () => {
       await recalling;
 
       vi.advanceTimersByTime(COLOR_REFRESH_MS);
-      http.expectOne('/api/rooms').flush([LIVING]);
+      const reload = http.expectOne('/api/rooms');
+      expect(reload.request.method).toBe('GET');
+      reload.flush([LIVING]);
     });
 
     it('logs a scene that fails to recall', async () => {

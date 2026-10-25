@@ -37,15 +37,18 @@ public record Scene(string Id, string Name, IReadOnlyList<string> Colors);
 /// <param name="Brightness">1–100 percent.</param>
 /// <param name="Temperature">A white, in kelvin, from <see cref="HueColor.MinKelvin"/> to <see cref="HueColor.MaxKelvin"/>.</param>
 /// <param name="Color">A colour, as "#rrggbb". Lights that can only do whites ignore it.</param>
-public record LightChange(bool? On, int? Brightness, int? Temperature = null, string? Color = null)
+public partial record LightChange(bool? On, int? Brightness, int? Temperature = null, string? Color = null)
 {
     public bool IsValid =>
         (On, Brightness, Temperature, Color) is not (null, null, null, null)
         && Brightness is null or (>= 1 and <= 100)
         && Temperature is null or (>= HueColor.MinKelvin and <= HueColor.MaxKelvin)
-        && (Color is null || Regex.IsMatch(Color, "^#[0-9a-fA-F]{6}\\z"))
+        && (Color is null || HexColor().IsMatch(Color))
         // A light is either white or coloured, so asking for both is a mistake.
         && (Temperature is null || Color is null);
+
+    [GeneratedRegex("^#[0-9a-fA-F]{6}\\z", RegexOptions.None, matchTimeoutMilliseconds: 100)]
+    private static partial Regex HexColor();
 }
 
 public class HueBridgeException(string message, Exception? inner = null) : Exception(message, inner);

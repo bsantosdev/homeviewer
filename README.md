@@ -91,7 +91,7 @@ The server talks to the bridge's local API, so this works without the internet. 
 Rooms are listed by name; to rename one, rename it in the Hue app. Only rooms show up, so a light that isn't in a room in the Hue app doesn't appear on the dashboard.
 
 1. Find the bridge's IP address in the Hue app (**Settings → My Hue system → Bridge**), or at https://discovery.meethue.com.
-2. Press the round link button on the bridge, then within 30 seconds run this (in Git Bash or another shell with `curl`; `-k` is needed because the bridge's certificate is self-signed):
+2. Press the round link button on the bridge, then within 30 seconds run this (in Git Bash or another shell with `curl`; `-k` is needed because the bridge's certificate comes from Signify's own CA, which curl doesn't know; the server trusts that CA and nothing else):
 
    ```sh
    curl -k -X POST https://<bridge-ip>/api -d '{"devicetype":"homeviewer#server"}'

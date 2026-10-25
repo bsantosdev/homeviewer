@@ -14,11 +14,10 @@ builder.Services.AddHttpClient(nameof(CalendarFeedReader), http => http.Timeout 
 builder.Services.AddSingleton<CalendarFeedReader>();
 builder.Services.Configure<HueOptions>(builder.Configuration.GetSection("Hue"));
 builder.Services.AddHttpClient(nameof(HueBridge), http => http.Timeout = TimeSpan.FromSeconds(5))
-    // The bridge serves HTTPS with its own self-signed certificate, which nothing else trusts.
-    // This client only ever talks to the configured bridge on the home network.
+    // The bridge's certificate comes from Signify's own CA, which the OS doesn't trust.
     .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
     {
-        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+        ServerCertificateCustomValidationCallback = HueCertificate.Validate,
     });
 builder.Services.AddSingleton<HueBridge>();
 
