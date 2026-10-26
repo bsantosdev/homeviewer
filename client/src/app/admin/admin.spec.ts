@@ -1,10 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Admin, CALENDAR_COLORS } from './admin';
+import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 import { IMAGE_SHRINKER } from '../backgrounds';
 import { SettingsService } from '../settings.service';
-import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
+import { Admin, CALENDAR_COLORS } from './admin';
 
 describe('Admin', () => {
   let fixture: ComponentFixture<Admin>;
