@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 
 namespace HomeViewer.Api;
@@ -23,6 +25,20 @@ public record DashboardSettings(
     public int BackgroundMinutes { get; init; } = 10;
 
     public const int MaxBackgroundMinutes = 24 * 60;
+
+    /// <summary>Whether the dashboard dims to a small clock on black between <see cref="NightStart"/> and <see cref="NightEnd"/>.</summary>
+    public bool NightMode { get; init; }
+
+    /// <summary>When night starts, as "HH:mm" local time. It may be later than <see cref="NightEnd"/>, past midnight.</summary>
+    public string NightStart { get; init; } = "22:00";
+
+    public string NightEnd { get; init; } = "07:00";
+
+    [JsonIgnore]
+    public bool HasValidNightHours => IsTime(NightStart) && IsTime(NightEnd);
+
+    private static bool IsTime(string value) =>
+        TimeOnly.TryParseExact(value, "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 }
 
 /// <param name="Url">A published ICS link (https:// or webcal://).</param>

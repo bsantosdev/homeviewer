@@ -1,0 +1,24 @@
+@if (offline()) {
+  <!-- Above everything, in fixed dark colours: it shows on the dashboard and the admin page alike. -->
+  <div
+    class="maintenance fixed bottom-0 left-0 right-0 top-0 z-50 flex items-center justify-center bg-black/60 p-[4vh] text-[#f2f2f2]"
+    role="alert"
+  >
+    <div class="max-w-[80vh] rounded-[3vh] bg-[#1c1c1e] p-[4vh] text-center shadow-lg">
+      <span class="mx-auto mb-[2vh] block h-[8vh] w-[8vh] text-[#ffb340]" aria-hidden="true">
+        <hugeicons-icon class="block h-full w-full" [icon]="wrenchIcon" [strokeWidth]="1.5" />
+      </span>
+      <h2 class="m-0 text-vh-4 font-semibold">Under maintenance</h2>
+      <p class="m-0 mt-[1.5vh] text-vh-2.5 opacity-80">
+        HomeViewer can’t reach its server right now. It will come back by itself once the server is
+        running again.
+      </p>
+      <p class="m-0 mt-[2.5vh] flex items-center justify-center text-vh-2.5 opacity-60">
+        <span class="mr-[1vh] inline-block h-[3vh] w-[3vh] animate-spin" aria-hidden="true">
+          <hugeicons-icon class="block h-full w-full" [icon]="loadingIcon" [strokeWidth]="2" />
+        </span>
+        Reconnecting…
+      </p>
+    </div>
+  </div>
+}

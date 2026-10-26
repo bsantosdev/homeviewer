@@ -48,6 +48,8 @@ app.MapPut("/api/settings", async (DashboardSettings settings, SettingsStore sto
         return Results.BadRequest($"Calendar \"{noColor.Name}\" needs a colour like #3b82f6.");
     if (settings.BackgroundMinutes is < 1 or > DashboardSettings.MaxBackgroundMinutes)
         return Results.BadRequest($"Backgrounds can change every 1 to {DashboardSettings.MaxBackgroundMinutes} minutes.");
+    if (!settings.HasValidNightHours)
+        return Results.BadRequest("Night mode needs a start and end time like 22:00.");
     if (settings.Backgrounds.Any(name => backgrounds.PathOf(name) is null))
         return Results.BadRequest("A background image is missing. Remove it and add it again.");
 

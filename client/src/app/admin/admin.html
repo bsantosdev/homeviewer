@@ -133,6 +133,41 @@
           />
         </label>
       </fieldset>
+      <fieldset class="mb-5">
+        <legend class="mb-1">Night mode</legend>
+        <p class="mb-2 text-sm opacity-70">
+          Shows only a dim clock on black during these hours. A tap brings the dashboard back for a
+          minute.
+        </p>
+        <label class="mb-3.5 flex items-center">
+          <input class="mr-2" name="nightMode" type="checkbox" [(ngModel)]="f.nightMode" />
+          Dim the dashboard at night
+        </label>
+        <div class="flex">
+          <label class="mr-3 flex flex-1 flex-col">
+            From
+            <input
+              class="field"
+              name="nightStart"
+              type="time"
+              required
+              [disabled]="!f.nightMode"
+              [(ngModel)]="f.nightStart"
+            />
+          </label>
+          <label class="flex flex-1 flex-col">
+            Until
+            <input
+              class="field"
+              name="nightEnd"
+              type="time"
+              required
+              [disabled]="!f.nightMode"
+              [(ngModel)]="f.nightEnd"
+            />
+          </label>
+        </div>
+      </fieldset>
       <div class="flex items-center">
         <button
           type="submit"

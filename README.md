@@ -1,6 +1,6 @@
 # HomeViewer
 
-Wall-mounted dashboard for an iPad on the home network. It shows a clock, the date, a title and message, and the current weather. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
+Wall-mounted dashboard for an iPad on the home network. A side bar on the left switches between Home, Lights, Timer and Email. Home shows a title and message, a clock and the date, and widgets for the weather, the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
 
 - `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
 - `client`: Angular 21 app (standalone components, signals), styled with Tailwind CSS v3.
@@ -62,9 +62,11 @@ New-NetFirewallRule -DisplayName "HomeViewer" -Direction Inbound -Protocol TCP -
 
 The dashboard reconnects automatically and fetches the settings again after the iPad wakes from sleep.
 
+While the server is stopped, for example during an update, an open page shows **Under maintenance** after 5 seconds and keeps trying to reconnect, every 10 seconds at most. Once the server is back, the alert goes away by itself. If a new build was installed meanwhile, the page reloads to run it. A page opened while the server is down can't load at all, because the server serves the page too.
+
 ## Outlook calendars
 
-With calendars set up, the screen splits in two: the clock on the left, and the next 7 days' events on the right. Each event shows its calendar's badge, its time and its title, grouped under Today, Tomorrow and then the date. Days with nothing planned are left out, except today. When there are more events than fit, swipe the list to scroll.
+With calendars or lights set up, home splits in two: the clock and weather on the left, and the next 7 days' events and the lights on the right. The lights card lists every room with a switch. Each event shows its calendar's badge, its time and its title, grouped under Today, Tomorrow and then the date. Days with nothing planned are left out, except today. When there are more events than fit, swipe the list to scroll.
 
 1. In Outlook on the web, go to **Settings → Calendar → Shared calendars → Publish a calendar**. Pick the calendar and how much to share. "Can view titles and locations" is enough; "Can view when I'm busy" shows every event as "Busy".
 2. Copy the **ICS** link (not the HTML one).
@@ -83,9 +85,16 @@ In `/admin`, under **Background images**, choose **Add images** to pick one or m
 - **Saving:** an upload only stays if you save the settings. Saving also deletes images you removed.
 - **Timing:** which image shows depends only on the time of day, so all screens change together.
 
+## Night mode
+
+In `/admin`, under **Night mode**, turn on **Dim the dashboard at night** and set the hours, for example from 22:00 until 07:00. During those hours the dashboard shows only a dim clock on black, with no photo, and stops refreshing the weather, calendars and lights.
+
+- **Waking:** tap the screen to bring the dashboard back for a minute. Each touch starts the minute again, and an open timer keeps it on until you leave the timer.
+- **Brightness:** a web page can't change the iPad's screen brightness, so the backlight stays on. Turn the brightness down, or use Night Shift, for a darker room.
+
 ## Philips Hue lights
 
-With a Hue bridge configured, a bulb button appears next to the timer button. It shows your rooms from the Hue app as tiles in place of the clock. Tap a tile to switch the room on or off, and swipe up or down on it to dim it: the tile fills from the bottom to show the brightness, and a swipe across its full height goes from 0 to 100%. Swiping a room that's off turns it on. With a keyboard, the up and down arrows dim a focused tile in steps of 10%.
+With a Hue bridge configured, a Lights entry appears in the side bar. It shows your rooms from the Hue app as tiles. Tap a tile to switch the room on or off, and swipe up or down on it to dim it: the tile fills from the bottom to show the brightness, and a swipe across its full height goes from 0 to 100%. Swiping a room that's off turns it on. With a keyboard, the up and down arrows dim a focused tile in steps of 10%.
 
 While a room is on, its tile takes the colours its lights are showing: a warm white looks amber, and lights in different colours make a gradient. The "•••" in a tile's corner opens the room's sheet:
 

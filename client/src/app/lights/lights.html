@@ -1,11 +1,11 @@
-<!-- Five tiles to a row; more than ten rooms scroll. Spacing is margins, not gap, for iOS 12. -->
+<!-- Five tiles to a row next to the side bar; more than ten rooms scroll. Spacing is margins, not gap, for iOS 12. -->
 <div
-  class="mx-auto flex max-h-[68vh] w-[90vw] flex-wrap justify-center overflow-y-auto text-left text-vh-3 [-webkit-overflow-scrolling:touch]"
+  class="flex max-h-full flex-wrap justify-center overflow-y-auto text-left text-vh-3 [-webkit-overflow-scrolling:touch]"
 >
   @for (room of rooms(); track room.id) {
     <!-- Swiping a room that's off turns it on, like the Hue app does. -->
     <app-room-tile
-      class="room mx-[1vw] my-[1.5vh] h-[30vh] w-[16vw]"
+      class="room mx-[0.8vw] my-[1.5vh] h-[30vh] w-[14vw]"
       [name]="room.name"
       [on]="room.on"
       [brightness]="room.brightness"

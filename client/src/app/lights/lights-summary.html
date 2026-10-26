@@ -1,0 +1,36 @@
+<h2 class="card-title flex justify-between">
+  <span>Lights</span>
+  <span class="on-count normal-case tracking-normal">{{ onCount() }} on</span>
+</h2>
+<!-- Two rooms to a row; spacing is padding, not gap, for iOS 12. -->
+<div class="flex flex-wrap">
+  @for (room of rooms(); track room.id) {
+    <div class="room flex w-1/2 items-center py-[0.8vh] pr-[1.5vh] text-vh-2.5">
+      <span
+        class="dot mr-[1vh] inline-block h-[1.6vh] w-[1.6vh] shrink-0 rounded-full"
+        [class]="room.on ? '' : 'bg-neutral-500/40'"
+        [style.background-color]="dot(room)"
+      ></span>
+      <span class="min-w-0 flex-1">
+        <span class="name block truncate">{{ room.name }}</span>
+        <span class="status block text-[1.9vh] tabular-nums opacity-60">{{ status(room) }}</span>
+      </span>
+      <button
+        type="button"
+        role="switch"
+        class="switch relative ml-[1vh] h-[3.6vh] w-[6.4vh] shrink-0 rounded-full transition-colors duration-200 [-webkit-tap-highlight-color:transparent]"
+        [class]="room.on ? 'bg-[#34c759]' : 'bg-neutral-500/40'"
+        [attr.aria-checked]="room.on"
+        [attr.aria-label]="room.name"
+        (click)="service.change(room.id, { on: !room.on })"
+      >
+        <span
+          class="absolute left-[0.3vh] top-[0.3vh] h-[3vh] w-[3vh] rounded-full bg-white shadow transition-transform duration-200"
+          [class]="room.on ? 'translate-x-[2.8vh]' : ''"
+        ></span>
+      </button>
+    </div>
+  } @empty {
+    <p class="m-0 text-vh-2.5 opacity-50">No rooms with lights found on the Hue bridge.</p>
+  }
+</div>

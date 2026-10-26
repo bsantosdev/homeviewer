@@ -13,16 +13,25 @@ export const TEST_SETTINGS: DashboardSettings = {
   calendars: [],
   backgrounds: [],
   backgroundMinutes: 10,
+  nightMode: false,
+  nightStart: '22:00',
+  nightEnd: '07:00',
 };
 
 /** A stand-in for the SignalR connection that lets tests fire hub events. */
 export class FakeHub implements SettingsHub {
   readonly handlers = new Map<string, (...args: unknown[]) => void>();
+  reconnecting?: (error?: Error) => void;
   reconnected?: (connectionId?: string) => void;
   startResult: Promise<void> = Promise.resolve();
+  starts = 0;
 
   on(method: string, handler: (...args: unknown[]) => void): void {
     this.handlers.set(method, handler);
+  }
+
+  onreconnecting(callback: (error?: Error) => void): void {
+    this.reconnecting = callback;
   }
 
   onreconnected(callback: (connectionId?: string) => void): void {
@@ -30,6 +39,7 @@ export class FakeHub implements SettingsHub {
   }
 
   start(): Promise<void> {
+    this.starts++;
     return this.startResult;
   }
 

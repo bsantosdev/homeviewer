@@ -20,10 +20,12 @@ describe('App', () => {
     });
   });
 
-  it('renders a router outlet', async () => {
+  it('renders a router outlet, with the maintenance alert over every page', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
-    expect((fixture.nativeElement as HTMLElement).querySelector('router-outlet')).not.toBeNull();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('router-outlet')).not.toBeNull();
+    expect(el.querySelector('app-maintenance')).not.toBeNull();
   });
 
   it.each([

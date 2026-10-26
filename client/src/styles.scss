@@ -19,6 +19,22 @@
   }
 }
 
+// The dashboard's widgets: translucent panels over the background photo. There's no
+// backdrop blur, which is too slow on the iPad mini 2 over a full-screen photo.
+@layer components {
+  .card {
+    @apply box-border rounded-[3vh] bg-white/60 p-[2.5vh] shadow-lg;
+  }
+
+  .dark .card {
+    @apply bg-black/45;
+  }
+
+  .card-title {
+    @apply m-0 mb-[1.5vh] text-vh-2.5 font-semibold uppercase tracking-wide opacity-60;
+  }
+}
+
 html,
 body {
   @apply m-0 h-full;

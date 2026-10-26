@@ -1,10 +1,10 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Admin, CALENDAR_COLORS } from './admin';
+import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 import { IMAGE_SHRINKER } from '../backgrounds';
 import { SettingsService } from '../settings.service';
-import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
+import { Admin, CALENDAR_COLORS } from './admin';
 
 describe('Admin', () => {
   let fixture: ComponentFixture<Admin>;
@@ -191,6 +191,26 @@ describe('Admin', () => {
     TestBed.inject(SettingsService).settings.set({ ...TEST_SETTINGS, title: 'Pushed' });
     await fixture.whenStable();
     expect(query(el, '[name=title]', HTMLInputElement).value).toBe('Kitchen');
+  });
+
+  it('sets the night hours, which can only change while night mode is on', async () => {
+    await loadSettings();
+    const start = query(el, '[name=nightStart]', HTMLInputElement);
+    expect(start.disabled).toBe(true);
+
+    query(el, '[name=nightMode]', HTMLInputElement).click();
+    await fixture.whenStable();
+    expect(start.disabled).toBe(false);
+    await type('[name=nightStart]', '23:30');
+    await type('[name=nightEnd]', '06:15');
+    await submit();
+
+    expect(http.expectOne({ method: 'PUT', url: '/api/settings' }).request.body).toEqual({
+      ...TEST_SETTINGS,
+      nightMode: true,
+      nightStart: '23:30',
+      nightEnd: '06:15',
+    });
   });
 
   describe('background images', () => {
