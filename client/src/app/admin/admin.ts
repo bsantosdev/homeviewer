@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { BackgroundsService, backgroundUrl } from '../backgrounds';
 import { DashboardSettings, SettingsService } from '../settings.service';
 
 /** Colours for new calendars, in turn. */
@@ -21,6 +22,8 @@ export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b
 })
 export class Admin {
   private readonly service = inject(SettingsService);
+  private readonly backgrounds = inject(BackgroundsService);
+  protected readonly backgroundUrl = backgroundUrl;
   protected readonly isDark = this.service.isDark;
   protected readonly form = signal<DashboardSettings | null>(null);
   protected readonly status = signal('');
@@ -29,7 +32,12 @@ export class Admin {
     // Take a copy of the settings once loaded, so edits don't touch the live signal.
     effect(() => {
       const s = this.service.settings();
-      if (s && !this.form()) this.form.set({ ...s, calendars: s.calendars.map((c) => ({ ...c })) });
+      if (s && !this.form())
+        this.form.set({
+          ...s,
+          calendars: s.calendars.map((c) => ({ ...c })),
+          backgrounds: [...s.backgrounds],
+        });
     });
   }
 
@@ -51,18 +59,44 @@ export class Admin {
     this.form.set({ ...form, calendars: form.calendars.filter((_, i) => i !== index) });
   }
 
+  /** Uploads the picked images one by one. They're kept once the settings are saved. */
+  protected async addBackgrounds(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files ?? []);
+    // Clear the picker, so picking the same file again still counts as a change.
+    input.value = '';
+    for (let i = 0; i < files.length; i++) {
+      this.status.set(`Uploading image ${String(i + 1)} of ${String(files.length)}…`);
+      try {
+        const name = await this.backgrounds.upload(files[i]);
+        this.form.update((f) => f && { ...f, backgrounds: [...f.backgrounds, name] });
+      } catch (err: unknown) {
+        this.status.set(`Couldn’t add ${files[i].name}: ${reasonFor(err) || 'upload failed'}`);
+        return;
+      }
+    }
+    if (files.length) this.status.set('Save to keep the new images');
+  }
+
+  protected removeBackground(form: DashboardSettings, name: string): void {
+    this.form.set({ ...form, backgrounds: form.backgrounds.filter((b) => b !== name) });
+  }
+
   protected async save(form: DashboardSettings): Promise<void> {
     this.status.set('Saving…');
     try {
       await this.service.save(form);
       this.status.set('Saved');
     } catch (err: unknown) {
-      // The server explains rejected settings, e.g. a calendar without a web link.
-      const reason =
-        err instanceof HttpErrorResponse && err.status === 400 && typeof err.error === 'string'
-          ? err.error
-          : '';
+      const reason = reasonFor(err);
       this.status.set(reason ? `Save failed: ${reason}` : 'Save failed');
     }
   }
+}
+
+/** The server explains rejected requests, e.g. a calendar without a web link; local errors carry a message. */
+function reasonFor(err: unknown): string {
+  if (err instanceof HttpErrorResponse)
+    return err.status === 400 && typeof err.error === 'string' ? err.error : '';
+  return err instanceof Error ? err.message : '';
 }

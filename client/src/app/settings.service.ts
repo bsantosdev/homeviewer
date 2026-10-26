@@ -12,6 +12,10 @@ export interface DashboardSettings {
   latitude: number;
   longitude: number;
   calendars: CalendarFeed[];
+  /** Uploaded images shown behind the dashboard, in turn (see `backgroundUrl`). */
+  backgrounds: string[];
+  /** How long each background shows, in minutes. */
+  backgroundMinutes: number;
 }
 
 /** A published Outlook (ICS) calendar. The server downloads it; the link stays private to the home network. */

@@ -1,0 +1,13 @@
+@for (layer of layers(); track layer.id) {
+  <div
+    class="layer absolute bottom-0 left-0 right-0 top-0 animate-fade-in bg-cover bg-center"
+    [style.background-image]="'url(' + layer.url + ')'"
+  ></div>
+}
+@if (layers().length) {
+  <!-- Tones the photo down so the dashboard's text stays readable on it. -->
+  <div
+    class="veil absolute bottom-0 left-0 right-0 top-0"
+    [class]="isDark() ? 'bg-black/50' : 'bg-white/60'"
+  ></div>
+}

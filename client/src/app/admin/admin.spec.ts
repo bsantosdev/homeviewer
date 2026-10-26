@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 import { Admin, CALENDAR_COLORS } from './admin';
+import { IMAGE_SHRINKER } from '../backgrounds';
 import { SettingsService } from '../settings.service';
 import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 
@@ -9,9 +10,17 @@ describe('Admin', () => {
   let fixture: ComponentFixture<Admin>;
   let el: HTMLElement;
   let http: HttpTestingController;
+  // jsdom can't decode images, so "shrinking" hands the file back.
+  const shrink = vi.fn((file: Blob) => Promise.resolve(file));
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ providers: [provideRouter([]), ...provideTestBackend()] });
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        ...provideTestBackend(),
+        { provide: IMAGE_SHRINKER, useValue: shrink },
+      ],
+    });
     http = TestBed.inject(HttpTestingController);
     fixture = TestBed.createComponent(Admin);
     el = fixture.nativeElement as HTMLElement;
@@ -182,5 +191,101 @@ describe('Admin', () => {
     TestBed.inject(SettingsService).settings.set({ ...TEST_SETTINGS, title: 'Pushed' });
     await fixture.whenStable();
     expect(query(el, '[name=title]', HTMLInputElement).value).toBe('Kitchen');
+  });
+
+  describe('background images', () => {
+    const photo = (name: string) => new File(['jpeg'], name, { type: 'image/jpeg' });
+
+    async function pick(...files: File[]): Promise<void> {
+      const input = query(el, 'input.add-backgrounds', HTMLInputElement);
+      Object.defineProperty(input, 'files', { value: files, configurable: true });
+      input.dispatchEvent(new Event('change'));
+      await settle();
+    }
+
+    function thumbnails(): string[] {
+      return Array.from(el.querySelectorAll<HTMLImageElement>('.background img'), (img) =>
+        img.getAttribute('src'),
+      ) as string[];
+    }
+
+    it('uploads picked images one by one and saves them with the interval', async () => {
+      await loadSettings();
+
+      await pick(photo('beach.jpg'), photo('snow.jpg'));
+      expect(text(el, 'form span')).toBe('Uploading image 1 of 2…');
+      http.expectOne({ method: 'POST', url: '/api/backgrounds' }).flush({ name: 'a.jpg' });
+      await settle();
+      expect(text(el, 'form span')).toBe('Uploading image 2 of 2…');
+      http.expectOne({ method: 'POST', url: '/api/backgrounds' }).flush({ name: 'b.jpg' });
+      await settle();
+
+      expect(thumbnails()).toEqual(['/api/backgrounds/a.jpg', '/api/backgrounds/b.jpg']);
+      expect(text(el, 'form span')).toBe('Save to keep the new images');
+
+      await type('[name=backgroundMinutes]', '5');
+      await submit();
+      const req = http.expectOne({ method: 'PUT', url: '/api/settings' });
+      expect(req.request.body).toEqual({
+        ...TEST_SETTINGS,
+        backgrounds: ['a.jpg', 'b.jpg'],
+        backgroundMinutes: 5,
+      });
+    });
+
+    it('stops at an upload the server rejects and says why', async () => {
+      await loadSettings();
+
+      await pick(photo('drawing.gif'), photo('snow.jpg'));
+      http
+        .expectOne('/api/backgrounds')
+        .flush('Only JPEG and PNG images can be used as backgrounds.', {
+          status: 400,
+          statusText: 'Bad Request',
+        });
+      await settle();
+
+      expect(text(el, 'form span')).toBe(
+        'Couldn’t add drawing.gif: Only JPEG and PNG images can be used as backgrounds.',
+      );
+      http.expectNone('/api/backgrounds');
+      expect(thumbnails()).toEqual([]);
+    });
+
+    it('reports uploads that fail in the browser or on the server', async () => {
+      await loadSettings();
+
+      shrink.mockRejectedValueOnce(new Error('The browser can’t read this image.'));
+      await pick(photo('photo.heic'));
+      expect(text(el, 'form span')).toBe(
+        'Couldn’t add photo.heic: The browser can’t read this image.',
+      );
+
+      await pick(photo('beach.jpg'));
+      http.expectOne('/api/backgrounds').flush('boom', { status: 500, statusText: 'Error' });
+      await settle();
+      expect(text(el, 'form span')).toBe('Couldn’t add beach.jpg: upload failed');
+    });
+
+    it('does nothing when no file is picked', async () => {
+      await loadSettings();
+      await pick();
+      http.expectNone('/api/backgrounds');
+      expect(text(el, 'form span')).toBe('');
+    });
+
+    it('removes images from a copy of the settings', async () => {
+      http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, backgrounds: ['a.jpg', 'b.jpg'] });
+      await fixture.whenStable();
+
+      query(el, 'button[aria-label="Remove background 1"]', HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(thumbnails()).toEqual(['/api/backgrounds/b.jpg']);
+      expect(TestBed.inject(SettingsService).settings()?.backgrounds).toEqual(['a.jpg', 'b.jpg']);
+      await submit();
+      const req = http.expectOne({ method: 'PUT', url: '/api/settings' });
+      expect(req.request.body).toEqual({ ...TEST_SETTINGS, backgrounds: ['b.jpg'] });
+    });
   });
 });

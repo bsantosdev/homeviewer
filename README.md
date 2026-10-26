@@ -2,7 +2,7 @@
 
 Wall-mounted dashboard for an iPad on the home network. It shows a clock, the date, a title and message, and the current weather. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
 
-- `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
+- `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
 - `client`: Angular 21 app (standalone components, signals), styled with Tailwind CSS v3.
 - `server/HomeViewer.Api.Tests`: xUnit tests for the API, including SignalR.
 
@@ -73,6 +73,15 @@ With calendars set up, the screen splits in two: the clock on the left, and the 
 Each event on the dashboard gets a badge with its calendar's name in that colour. The badge text is black or white, whichever is easier to read on the colour.
 
 The server downloads each calendar at most every 5 minutes, and the dashboard refreshes every 5 minutes. Anyone with a published link can read that calendar, so treat it like a password. It's stored in `data/settings.json` and visible to anyone who can open `/admin` on your network. To revoke a link, unpublish the calendar in Outlook.
+
+## Background images
+
+In `/admin`, under **Background images**, choose **Add images** to pick one or more photos, set **Change image every (minutes)**, and save. The dashboard shows the images one at a time behind everything, fading from one to the next. A dark veil (or a light one, with the light theme) keeps the text readable.
+
+- **Resizing:** the admin page resizes each photo to at most 2048 pixels on its longest side and saves it as a JPEG before uploading. Full-size phone photos would use up the iPad's memory.
+- **Storage:** images are stored in `data/backgrounds/`, next to `settings.json`, so they stay out of the repository.
+- **Saving:** an upload only stays if you save the settings. Saving also deletes images you removed.
+- **Timing:** which image shows depends only on the time of day, so all screens change together.
 
 ## Philips Hue lights
 
