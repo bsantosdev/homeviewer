@@ -9,12 +9,14 @@ import {
   signal,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { BulbIcon, StopWatchIcon } from '@hugeicons/core-free-icons';
+import { BulbIcon, Home09Icon, Mail01Icon, StopWatchIcon } from '@hugeicons/core-free-icons';
 import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
 import { Background } from '../background/background';
 import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService } from '../lights.service';
 import { Lights } from '../lights/lights';
+import { LightsSummary } from '../lights/lights-summary';
+import { WAKE_MS, isNight } from '../night';
 import { SettingsService } from '../settings.service';
 import { Timer } from '../timer/timer';
 import { weatherIconFor } from '../weather-icons';
@@ -25,18 +27,32 @@ export const EVENTS_REFRESH_MS = 1 * 60 * 1000;
 // Often enough to pick up lights switched from the Hue app or a wall switch.
 export const LIGHTS_REFRESH_MS = 15 * 1000;
 
-/** What replaces the clock in the middle of the screen. */
-type Panel = 'timer' | 'lights';
+/** The pages in the side bar. Home holds the widgets; the others fill the space next to the bar. */
+type Page = 'home' | 'lights' | 'timer' | 'email';
+
+interface NavItem {
+  page: Page;
+  label: string;
+  icon: typeof Home09Icon;
+}
+
+const HOME: NavItem = { page: 'home', label: 'Home', icon: Home09Icon };
+const LIGHTS: NavItem = { page: 'lights', label: 'Lights', icon: BulbIcon };
+const TIMER: NavItem = { page: 'timer', label: 'Timer', icon: StopWatchIcon };
+const EMAIL: NavItem = { page: 'email', label: 'Email', icon: Mail01Icon };
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Background, DatePipe, HugeiconsIconComponent, Lights, Timer],
+  imports: [Background, DatePipe, HugeiconsIconComponent, Lights, LightsSummary, Timer],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class:
-      'relative z-0 box-border flex h-screen flex-col justify-between bg-[#f7f7f5] px-[5vw] py-[4vh] text-center text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
+      'relative z-0 box-border flex h-screen bg-[#f7f7f5] p-[3vh] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
     '[class.dark]': 'isDark()',
+    // iOS 12 has no pointer events.
+    '(touchstart)': 'keepAwake()',
+    '(mousedown)': 'keepAwake()',
   },
 })
 export class Dashboard {
@@ -49,12 +65,34 @@ export class Dashboard {
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;
-  protected readonly timerIcon = StopWatchIcon;
-  protected readonly lightsIcon = BulbIcon;
-  protected readonly panel = signal<Panel | null>(null);
-  /** The lights button only shows once the server says a Hue bridge is set up. */
+  private readonly chosen = signal<Page>('home');
+  /** The lights only show once the server says a Hue bridge is set up. */
   protected readonly hasLights = computed(() => this.lightsService.rooms() !== null);
+  /** Falls back to home if the bridge goes away while its page is open. */
+  protected readonly page = computed(() =>
+    this.chosen() === 'lights' && !this.hasLights() ? 'home' : this.chosen(),
+  );
+  protected readonly nav = computed(() =>
+    this.hasLights() ? [HOME, LIGHTS, TIMER, EMAIL] : [HOME, TIMER, EMAIL],
+  );
+  /** When the last tap at night stops keeping the dashboard on. */
+  private readonly awakeUntil = signal(0);
+  /**
+   * At night only a dim clock shows, and nothing refreshes. A tap brings the dashboard back for a
+   * while, and an open timer keeps it on so a countdown isn't lost.
+   */
+  protected readonly asleep = computed(() => {
+    const s = this.settings();
+    return (
+      !!s &&
+      isNight(s, this.now()) &&
+      this.now().getTime() >= this.awakeUntil() &&
+      this.page() !== 'timer'
+    );
+  });
   protected readonly hasCalendars = computed(() => !!this.settings()?.calendars.length);
+  /** Whether home has a right-hand column of lists, or the clock gets the whole width. */
+  protected readonly hasWidgets = computed(() => this.hasCalendars() || this.hasLights());
   private readonly events = signal<CalendarEvent[]>([]);
   protected readonly agenda = computed(() => agenda(this.events(), this.now()));
 
@@ -75,13 +113,13 @@ export class Dashboard {
       this.now.set(new Date());
     }, 1000);
     const weatherTimer = setInterval(() => {
-      void this.loadWeather();
+      if (!this.asleep()) void this.loadWeather();
     }, WEATHER_REFRESH_MS);
     const eventsTimer = setInterval(() => {
-      void this.loadEvents();
+      if (!this.asleep()) void this.loadEvents();
     }, EVENTS_REFRESH_MS);
     const lightsTimer = setInterval(() => {
-      void this.lightsService.load();
+      if (!this.asleep()) void this.lightsService.load();
     }, LIGHTS_REFRESH_MS);
     inject(DestroyRef).onDestroy(() => {
       clearInterval(clock);
@@ -100,10 +138,25 @@ export class Dashboard {
     void this.lightsService.load();
   }
 
-  protected toggle(panel: Panel): void {
-    this.panel.update((open) => (open === panel ? null : panel));
+  protected show(page: Page): void {
+    this.chosen.set(page);
     // Show the current state when the lights open, not what it was at the last refresh.
-    if (this.panel() === 'lights') void this.lightsService.load();
+    if (page === 'lights') void this.lightsService.load();
+  }
+
+  /** Brings the dashboard back at night, with fresh data: nothing refreshed while it was dark. */
+  protected wake(): void {
+    this.awakeUntil.set(Date.now() + WAKE_MS);
+    this.chosen.set('home');
+    this.now.set(new Date());
+    void this.loadWeather();
+    void this.loadEvents();
+    void this.lightsService.load();
+  }
+
+  /** Any touch while woken at night starts the minute again, so it doesn't go dark mid-use. */
+  protected keepAwake(): void {
+    if (this.awakeUntil() > Date.now()) this.awakeUntil.set(Date.now() + WAKE_MS);
   }
 
   private async loadWeather(): Promise<void> {

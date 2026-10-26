@@ -6,6 +6,7 @@ import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService, Room } from '../lights.service';
 import { SettingsService } from '../settings.service';
 import { Weather, WeatherService } from '../weather.service';
+import { WAKE_MS } from '../night';
 import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/test-helpers';
 
 const MAINLY_CLEAR: Weather = {
@@ -74,21 +75,22 @@ describe('Dashboard', () => {
     expect(text(el, '.clock')).toBe('14:05');
     expect(el.textContent).toContain('Friday, 23 October');
     expect(current).toHaveBeenCalledWith(38.72, -9.14);
-    expect(text(el, 'footer .weather-temp')).toBe('21°');
-    expect(text(el, 'footer .weather-range')).toBe('↓14° ↑24°');
-    expect(text(el, 'footer .weather-summary')).toBe('Mainly clear · Lisbon');
+    expect(text(el, '.weather .weather-temp')).toBe('21°');
+    expect(text(el, '.weather .weather-range')).toBe('↓14° ↑24°');
+    expect(text(el, '.weather .weather-summary')).toBe('Mainly clear');
+    expect(text(el, '.weather .weather-place')).toBe('Lisbon');
   });
 
   it('shows an icon for the weather conditions', async () => {
     await loadSettings();
-    const icon = query(el, 'footer .weather-icon');
+    const icon = query(el, '.weather .weather-icon');
     expect(icon.getAttribute('aria-hidden')).toBe('true');
     expect(icon.querySelector('svg path')).not.toBeNull();
   });
 
   it('changes the weather icon when the conditions change', async () => {
     await loadSettings();
-    const before = query(el, 'footer .weather-icon svg', SVGElement).innerHTML;
+    const before = query(el, '.weather .weather-icon svg', SVGElement).innerHTML;
 
     current.mockResolvedValue({ ...MAINLY_CLEAR, condition: 'snow' });
     vi.advanceTimersByTime(WEATHER_REFRESH_MS);
@@ -96,14 +98,14 @@ describe('Dashboard', () => {
     await new Promise((resolve) => setTimeout(resolve));
     await fixture.whenStable();
 
-    expect(query(el, 'footer .weather-icon svg', SVGElement).innerHTML).not.toBe(before);
+    expect(query(el, '.weather .weather-icon svg', SVGElement).innerHTML).not.toBe(before);
   });
 
   it('leaves out the weather icon for unknown conditions', async () => {
     current.mockResolvedValue({ ...MAINLY_CLEAR, description: '', condition: 'unknown' });
     await loadSettings();
-    expect(el.querySelector('footer .weather-icon')).toBeNull();
-    expect(text(el, 'footer .weather-temp')).toBe('21°');
+    expect(el.querySelector('.weather .weather-icon')).toBeNull();
+    expect(text(el, '.weather .weather-temp')).toBe('21°');
   });
 
   it('applies the theme from the settings', async () => {
@@ -154,23 +156,155 @@ describe('Dashboard', () => {
     await Promise.resolve();
 
     expect(log).toHaveBeenCalledWith('Weather fetch failed', error);
-    expect(text(el, 'footer')).toBe('');
+    expect(el.querySelector('.weather')).toBeNull();
   });
 
-  it('toggles the timer in place of the clock', async () => {
-    await loadSettings();
-    const toggle = query(el, 'button[aria-label="Timer"]', HTMLButtonElement);
-    expect(toggle.classList).toContain('opacity-75');
+  describe('night mode', () => {
+    // The tests run at 14:05, so this hour is night.
+    const NIGHT = { ...TEST_SETTINGS, nightMode: true, nightStart: '14:00', nightEnd: '15:00' };
 
-    toggle.click();
-    await fixture.whenStable();
-    expect(el.querySelector('app-timer')).not.toBeNull();
-    expect(toggle.classList).toContain('opacity-100');
+    function asleep(): boolean {
+      return el.querySelector('.night') !== null;
+    }
 
-    toggle.click();
-    await fixture.whenStable();
-    expect(el.querySelector('app-timer')).toBeNull();
-    expect(text(el, '.clock')).toBe('14:05');
+    async function wait(ms: number): Promise<void> {
+      vi.advanceTimersByTime(ms);
+      await fixture.whenStable();
+    }
+
+    async function wake(): Promise<void> {
+      query(el, 'button.night').click();
+      await fixture.whenStable();
+    }
+
+    it('shows only a dim clock during the night hours', async () => {
+      await loadSettings(NIGHT);
+
+      expect(asleep()).toBe(true);
+      expect(text(el, '.night-clock')).toBe('14:05');
+      expect(el.querySelector('nav')).toBeNull();
+      expect(el.querySelector('app-background')).toBeNull();
+    });
+
+    it('is off outside the night hours, or when switched off', async () => {
+      await loadSettings({ ...NIGHT, nightStart: '22:00', nightEnd: '07:00' });
+      expect(asleep()).toBe(false);
+
+      TestBed.inject(SettingsService).settings.set({ ...NIGHT, nightMode: false });
+      await fixture.whenStable();
+      expect(asleep()).toBe(false);
+    });
+
+    it('stops refreshing while dark', async () => {
+      await loadSettings({ ...NIGHT, calendars: WITH_CALENDAR.calendars });
+      await wait(WEATHER_REFRESH_MS);
+
+      expect(current).toHaveBeenCalledTimes(1);
+      expect(events).toHaveBeenCalledTimes(1);
+      expect(loadLights).toHaveBeenCalledTimes(1);
+    });
+
+    it('wakes on a tap for a minute, with fresh data', async () => {
+      await loadSettings(NIGHT);
+
+      await wake();
+      expect(asleep()).toBe(false);
+      expect(text(el, '.clock')).toBe('14:05');
+      expect(current).toHaveBeenCalledTimes(2);
+      expect(loadLights).toHaveBeenCalledTimes(2);
+
+      await wait(WAKE_MS - 1000);
+      expect(asleep()).toBe(false);
+      await wait(1000);
+      expect(asleep()).toBe(true);
+    });
+
+    it.each(['touchstart', 'mousedown'])('stays awake while being used (%s)', async (type) => {
+      await loadSettings(NIGHT);
+      await wake();
+
+      await wait(WAKE_MS - 10_000);
+      el.dispatchEvent(new Event(type));
+      await wait(WAKE_MS - 1000);
+      expect(asleep()).toBe(false);
+
+      await wait(1000);
+      expect(asleep()).toBe(true);
+    });
+
+    it('stays awake while the timer is open, and wakes to home', async () => {
+      await loadSettings(NIGHT);
+      await wake();
+      query(el, 'nav button[aria-label="Timer"]').click();
+      await fixture.whenStable();
+
+      await wait(5 * WAKE_MS);
+      expect(el.querySelector('app-timer')).not.toBeNull();
+
+      query(el, 'nav button[aria-label="Home"]').click();
+      await wait(1000);
+      expect(asleep()).toBe(true);
+      await wake();
+      expect(el.querySelector('app-timer')).toBeNull();
+    });
+
+    it('lights up again when the night ends', async () => {
+      await loadSettings(NIGHT);
+      vi.setSystemTime(new Date(2026, 9, 23, 15, 0));
+      await wait(1000);
+      expect(asleep()).toBe(false);
+    });
+  });
+
+  describe('side bar', () => {
+    function navButton(label: string): HTMLButtonElement | null {
+      return el.querySelector<HTMLButtonElement>(`nav button[aria-label="${label}"]`);
+    }
+
+    async function go(label: string): Promise<void> {
+      navButton(label)?.click();
+      await fixture.whenStable();
+    }
+
+    function current(): string[] {
+      return Array.from(el.querySelectorAll('nav [aria-current="page"]'), (b) =>
+        String(b.getAttribute('aria-label')),
+      );
+    }
+
+    it('starts on home', async () => {
+      await loadSettings();
+      expect(Array.from(el.querySelectorAll('nav button'), (b) => b.ariaLabel)).toEqual([
+        'Home',
+        'Timer',
+        'Email',
+      ]);
+      expect(current()).toEqual(['Home']);
+    });
+
+    it('shows the timer in place of the widgets, and goes back home', async () => {
+      await loadSettings();
+
+      await go('Timer');
+      expect(el.querySelector('app-timer')).not.toBeNull();
+      expect(el.querySelector('.clock')).toBeNull();
+      expect(current()).toEqual(['Timer']);
+
+      // Tapping the open page again leaves it open.
+      await go('Timer');
+      expect(el.querySelector('app-timer')).not.toBeNull();
+
+      await go('Home');
+      expect(el.querySelector('app-timer')).toBeNull();
+      expect(text(el, '.clock')).toBe('14:05');
+    });
+
+    it('has a place for email', async () => {
+      await loadSettings();
+      await go('Email');
+      expect(text(el, '.email')).toBe('Email is coming soon.');
+      expect(current()).toEqual(['Email']);
+    });
   });
 
   it('stops its timers when destroyed', async () => {
@@ -197,47 +331,42 @@ describe('Dashboard', () => {
       return el.querySelector<HTMLButtonElement>('button[aria-label="Lights"]');
     }
 
-    it('hides the lights button while no Hue bridge is set up', async () => {
+    it('hides the lights while no Hue bridge is set up', async () => {
       await loadSettings();
       expect(loadLights).toHaveBeenCalledTimes(1);
       expect(lightsButton()).toBeNull();
+      expect(el.querySelector('app-lights-summary')).toBeNull();
+      // With nothing to list, the clock gets the whole width.
+      expect(el.querySelector('.text-clock')).not.toBeNull();
     });
 
-    it('opens the lights in place of the clock and fetches their current state', async () => {
+    it('lists the rooms on home, next to a smaller clock', async () => {
       rooms.set([KITCHEN]);
       await loadSettings();
-      const toggle = lightsButton();
-      expect(toggle?.classList).toContain('opacity-75');
-
-      toggle?.click();
-      await fixture.whenStable();
-      expect(el.querySelector('app-lights')).not.toBeNull();
-      expect(el.querySelector('.text-clock')).toBeNull();
-      expect(toggle?.classList).toContain('opacity-100');
-      expect(loadLights).toHaveBeenCalledTimes(2);
-
-      toggle?.click();
-      await fixture.whenStable();
-      expect(el.querySelector('app-lights')).toBeNull();
-      expect(text(el, '.clock')).toBe('14:05');
-      expect(loadLights).toHaveBeenCalledTimes(2);
+      expect(text(el, 'app-lights-summary .name')).toBe('Kitchen');
+      expect(el.querySelector('.text-clock-half')).not.toBeNull();
     });
 
-    it('shows one panel at a time', async () => {
+    it('opens the lights page and fetches their current state', async () => {
       rooms.set([KITCHEN]);
       await loadSettings();
+      expect(lightsButton()?.getAttribute('aria-current')).toBeNull();
 
       lightsButton()?.click();
       await fixture.whenStable();
-      query(el, 'button[aria-label="Timer"]', HTMLButtonElement).click();
-      await fixture.whenStable();
+      expect(el.querySelector('app-lights')).not.toBeNull();
+      expect(el.querySelector('.clock')).toBeNull();
+      expect(lightsButton()?.getAttribute('aria-current')).toBe('page');
+      expect(loadLights).toHaveBeenCalledTimes(2);
 
+      query(el, 'nav button[aria-label="Timer"]', HTMLButtonElement).click();
+      await fixture.whenStable();
       expect(el.querySelector('app-timer')).not.toBeNull();
       expect(el.querySelector('app-lights')).toBeNull();
-      expect(lightsButton()?.classList).toContain('opacity-75');
+      expect(loadLights).toHaveBeenCalledTimes(2);
     });
 
-    it('goes back to the clock if the bridge goes away', async () => {
+    it('goes back home if the bridge goes away', async () => {
       rooms.set([KITCHEN]);
       await loadSettings();
       lightsButton()?.click();
@@ -267,7 +396,7 @@ describe('Dashboard', () => {
 
     function sections(): string[] {
       return Array.from(el.querySelectorAll('.agenda section'), (section) =>
-        Array.from(section.querySelectorAll('h2, .calendar-badge, .time, .title, p'), (n) =>
+        Array.from(section.querySelectorAll('h3, .calendar-badge, .time, .title, p'), (n) =>
           n.textContent.trim(),
         ).join(' '),
       );

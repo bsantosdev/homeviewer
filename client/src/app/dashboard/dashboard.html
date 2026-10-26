@@ -1,104 +1,155 @@
-<!-- z-0 on the host keeps the background's -z-10 above the page colour and below everything else. -->
-<app-background [now]="now()" />
-@if (settings(); as s) {
-  <div class="absolute right-[3vw] top-[3vh] flex text-[#1f6fd1] dark:text-[#5aa9ff]">
-    @if (hasLights()) {
+@if (asleep()) {
+  <!-- Nothing else is drawn at night, not even the photo, to keep the iPad idle. -->
+  <button
+    type="button"
+    class="night absolute bottom-0 left-0 right-0 top-0 z-10 flex w-full items-center justify-center bg-black text-[#4a4a4a] [-webkit-tap-highlight-color:transparent]"
+    aria-label="Wake the dashboard"
+    (click)="wake()"
+  >
+    <span class="night-clock text-[12vh] font-extralight tabular-nums">{{
+      now() | date: 'HH:mm'
+    }}</span>
+  </button>
+} @else if (settings(); as s) {
+  <!-- z-0 on the host keeps the background's -z-10 above the page colour and below everything else. -->
+  <app-background [now]="now()" />
+  <nav
+    class="card mr-[3vh] flex w-[11vh] shrink-0 flex-col items-center self-center rounded-full px-0 py-[1.2vh]"
+  >
+    @for (item of nav(); track item.page) {
       <button
         type="button"
-        class="mr-[1vw] h-[7vh] w-[7vh] p-[1.2vh] [-webkit-tap-highlight-color:transparent]"
-        [class.opacity-75]="panel() !== 'lights'"
-        [class.opacity-100]="panel() === 'lights'"
-        aria-label="Lights"
-        (click)="toggle('lights')"
+        class="my-[0.6vh] h-[8vh] w-[8vh] rounded-full p-[2.2vh] transition-colors duration-200 [-webkit-tap-highlight-color:transparent]"
+        [class]="
+          page() === item.page
+            ? 'bg-[#1a1a1a] text-white shadow dark:bg-white dark:text-[#1a1a1a]'
+            : 'opacity-80'
+        "
+        [attr.aria-label]="item.label"
+        [attr.aria-current]="page() === item.page ? 'page' : null"
+        (click)="show(item.page)"
       >
-        <hugeicons-icon class="block h-full w-full" [icon]="lightsIcon" [strokeWidth]="2" />
+        <hugeicons-icon class="block h-full w-full" [icon]="item.icon" [strokeWidth]="2" />
       </button>
     }
-    <button
-      type="button"
-      class="h-[7vh] w-[7vh] p-[1.2vh] [-webkit-tap-highlight-color:transparent]"
-      [class.opacity-75]="panel() !== 'timer'"
-      [class.opacity-100]="panel() === 'timer'"
-      aria-label="Timer"
-      (click)="toggle('timer')"
-    >
-      <hugeicons-icon class="block h-full w-full" [icon]="timerIcon" [strokeWidth]="2" />
-    </button>
-  </div>
+  </nav>
 
-  <header>
-    <h1 class="text-vh-5 font-semibold">{{ s.title }}</h1>
-    <p class="mt-[1vh] text-vh-3 opacity-75">{{ s.message }}</p>
-  </header>
+  <main class="flex min-w-0 flex-1 flex-col">
+    @switch (page()) {
+      @case ('lights') {
+        <section class="card flex min-h-0 flex-1 flex-col">
+          <h2 class="card-title">Lights</h2>
+          <app-lights class="min-h-0 flex-1" />
+        </section>
+      }
+      @case ('timer') {
+        <section class="card flex flex-1 flex-col justify-center text-center">
+          <app-timer />
+        </section>
+      }
+      @case ('email') {
+        <section class="card flex flex-1 flex-col items-center justify-center text-center">
+          <p class="email m-0 text-vh-3 opacity-60">Email is coming soon.</p>
+        </section>
+      }
+      @default {
+        <!-- With calendars or lights, the clock and weather take the left and the lists the right. -->
+        <div class="flex min-h-0 flex-1">
+          <div
+            class="flex min-w-0 flex-col justify-between"
+            [class]="hasWidgets() ? 'w-[42%] pr-[3vh]' : 'w-full'"
+          >
+            <header>
+              <h1 class="m-0 text-vh-5 font-semibold">{{ s.title }}</h1>
+              <p class="m-0 mt-[0.5vh] text-vh-3 opacity-75">{{ s.message }}</p>
+            </header>
 
-  <main>
-    @if (panel() === 'timer') {
-      <app-timer />
-    } @else if (panel() === 'lights' && hasLights()) {
-      <app-lights />
-    } @else {
-      <!-- With calendars, the clock takes the left half and the week's events the right half. -->
-      <div class="flex items-center">
-        <div class="w-full min-w-0">
-          <div
-            class="clock font-extralight tabular-nums"
-            [class.text-clock]="!hasCalendars()"
-            [class.text-clock-half]="hasCalendars()"
-          >
-            {{ now() | date: 'HH:mm' }}
-          </div>
-          <div class="text-vh-4 opacity-80">{{ now() | date: 'EEEE, d MMMM' }}</div>
-        </div>
-        @if (hasCalendars()) {
-          <div
-            class="agenda ml-[4vw] max-h-[64vh] w-full min-w-0 overflow-y-auto text-left text-vh-3 [-webkit-overflow-scrolling:touch]"
-          >
-            @for (day of agenda(); track day.date.getTime()) {
-              <section class="mb-[2.5vh] last:mb-0">
-                <h2 class="mb-[0.8vh] text-vh-2.5 font-semibold uppercase tracking-wide opacity-60">
-                  {{ day.label ?? (day.date | date: 'EEEE, d MMMM') }}
-                </h2>
-                @for (item of day.items; track $index) {
-                  <div class="flex items-center py-[0.4vh] leading-snug">
-                    <span class="w-[16vh] shrink-0 pr-[1vh]">
-                      <span
-                        class="calendar-badge inline-block max-w-full truncate rounded-full px-[1vh] align-middle text-[2.2vh] font-medium"
-                        [style.background-color]="item.color"
-                        [style.color]="item.textColor"
-                        >{{ item.calendar }}</span
-                      >
-                    </span>
-                    <span class="time w-[13vh] shrink-0 tabular-nums opacity-70">{{
-                      item.time
-                    }}</span>
-                    <span class="title min-w-0 flex-1 truncate">{{ item.title }}</span>
-                  </div>
-                } @empty {
-                  <p class="opacity-50">Nothing planned</p>
+            <div>
+              <div
+                class="clock font-extralight tabular-nums"
+                [class.text-clock]="!hasWidgets()"
+                [class.text-clock-half]="hasWidgets()"
+              >
+                {{ now() | date: 'HH:mm' }}
+              </div>
+              <div class="date text-vh-3.5 opacity-80">{{ now() | date: 'EEEE, d MMMM' }}</div>
+            </div>
+
+            @if (weather(); as w) {
+              <section class="weather card flex items-center">
+                @if (weatherIconFor(w.condition, w.isDay); as icon) {
+                  <span
+                    class="weather-icon mr-[2vh] inline-block h-[8vh] w-[8vh] shrink-0"
+                    aria-hidden="true"
+                  >
+                    <hugeicons-icon class="block h-full w-full" [icon]="icon" [strokeWidth]="1.5" />
+                  </span>
                 }
+                <span class="weather-temp mr-[2vh] text-[8vh] font-light leading-none"
+                  >{{ w.temperature }}°</span
+                >
+                <span class="min-w-0 text-vh-2.5">
+                  <span class="weather-summary block truncate">{{ w.description }}</span>
+                  <span class="block truncate opacity-70">
+                    <span class="weather-range" aria-label="Today's low and high"
+                      >↓{{ w.min }}° ↑{{ w.max }}°</span
+                    >
+                    · <span class="weather-place">{{ s.locationName }}</span>
+                  </span>
+                </span>
               </section>
+            } @else {
+              <!-- Keeps the clock in place until the weather arrives. -->
+              <div></div>
             }
           </div>
-        }
-      </div>
+
+          @if (hasWidgets()) {
+            <div class="flex w-[58%] min-w-0 flex-col">
+              @if (hasCalendars()) {
+                <section class="card flex min-h-0 flex-1 flex-col">
+                  <h2 class="card-title">Agenda</h2>
+                  <div
+                    class="agenda min-h-0 flex-1 overflow-y-auto text-vh-2.5 [-webkit-overflow-scrolling:touch]"
+                  >
+                    @for (day of agenda(); track day.date.getTime()) {
+                      <section class="mb-[2vh] last:mb-0">
+                        <h3 class="m-0 mb-[0.6vh] text-[2.2vh] font-semibold opacity-60">
+                          {{ day.label ?? (day.date | date: 'EEEE, d MMMM') }}
+                        </h3>
+                        @for (item of day.items; track $index) {
+                          <div class="flex items-center py-[0.4vh] leading-snug">
+                            <span class="w-[14vh] shrink-0 pr-[1vh]">
+                              <span
+                                class="calendar-badge inline-block max-w-full truncate rounded-full px-[1vh] align-middle text-[2vh] font-medium"
+                                [style.background-color]="item.color"
+                                [style.color]="item.textColor"
+                                >{{ item.calendar }}</span
+                              >
+                            </span>
+                            <span class="time w-[11vh] shrink-0 tabular-nums opacity-70">{{
+                              item.time
+                            }}</span>
+                            <span class="title min-w-0 flex-1 truncate">{{ item.title }}</span>
+                          </div>
+                        } @empty {
+                          <p class="m-0 opacity-50">Nothing planned</p>
+                        }
+                      </section>
+                    }
+                  </div>
+                </section>
+              }
+              @if (hasLights()) {
+                <app-lights-summary
+                  class="card max-h-[40vh] shrink-0 overflow-y-auto [-webkit-overflow-scrolling:touch]"
+                  [class]="hasCalendars() ? 'mt-[3vh]' : ''"
+                />
+              }
+            </div>
+          }
+        </div>
+      }
     }
   </main>
-
-  <footer class="flex min-h-[6vh] items-baseline justify-center text-vh-3.5">
-    @if (weather(); as w) {
-      @if (weatherIconFor(w.condition, w.isDay); as icon) {
-        <span
-          class="weather-icon mr-[1.5vw] inline-block h-[6vh] w-[6vh] self-center"
-          aria-hidden="true"
-        >
-          <hugeicons-icon class="block h-full w-full" [icon]="icon" [strokeWidth]="1.5" />
-        </span>
-      }
-      <span class="weather-temp mr-[1.5vw] text-vh-6 font-light">{{ w.temperature }}°</span>
-      <span class="weather-range mr-[2vw] opacity-70" aria-label="Today's low and high">
-        ↓{{ w.min }}° ↑{{ w.max }}°
-      </span>
-      <span class="weather-summary">{{ w.description }} · {{ s.locationName }}</span>
-    }
-  </footer>
 }

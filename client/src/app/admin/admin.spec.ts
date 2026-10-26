@@ -193,6 +193,26 @@ describe('Admin', () => {
     expect(query(el, '[name=title]', HTMLInputElement).value).toBe('Kitchen');
   });
 
+  it('sets the night hours, which can only change while night mode is on', async () => {
+    await loadSettings();
+    const start = query(el, '[name=nightStart]', HTMLInputElement);
+    expect(start.disabled).toBe(true);
+
+    query(el, '[name=nightMode]', HTMLInputElement).click();
+    await fixture.whenStable();
+    expect(start.disabled).toBe(false);
+    await type('[name=nightStart]', '23:30');
+    await type('[name=nightEnd]', '06:15');
+    await submit();
+
+    expect(http.expectOne({ method: 'PUT', url: '/api/settings' }).request.body).toEqual({
+      ...TEST_SETTINGS,
+      nightMode: true,
+      nightStart: '23:30',
+      nightEnd: '06:15',
+    });
+  });
+
   describe('background images', () => {
     const photo = (name: string) => new File(['jpeg'], name, { type: 'image/jpeg' });
 
