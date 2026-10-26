@@ -64,7 +64,7 @@ The dashboard reconnects automatically and fetches the settings again after the 
 
 ## Outlook calendars
 
-The dashboard lists today's and tomorrow's events below the clock.
+With calendars set up, the screen splits in two: the clock on the left, and the next 7 days' events on the right. Each event shows its calendar's badge, its time and its title, grouped under Today, Tomorrow and then the date. Days with nothing planned are left out, except today. When there are more events than fit, swipe the list to scroll.
 
 1. In Outlook on the web, go to **Settings → Calendar → Shared calendars → Publish a calendar**. Pick the calendar and how much to share. "Can view titles and locations" is enough; "Can view when I'm busy" shows every event as "Busy".
 2. Copy the **ICS** link (not the HTML one).

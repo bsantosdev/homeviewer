@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { BulbIcon, StopWatchIcon } from '@hugeicons/core-free-icons';
-import { agenda, startOfDay } from '../agenda';
+import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
 import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService } from '../lights.service';
 import { Lights } from '../lights/lights';
@@ -122,7 +122,7 @@ export class Dashboard {
     }
     const today = startOfDay(new Date());
     try {
-      this.events.set(await this.calendarService.events(today, startOfDay(today, 2)));
+      this.events.set(await this.calendarService.events(today, startOfDay(today, AGENDA_DAYS)));
     } catch (err: unknown) {
       console.error('Calendar fetch failed', err);
     }
