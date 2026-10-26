@@ -15,6 +15,14 @@ public record DashboardSettings(
 
     /// <summary>Published calendars to show. Settings files saved before this existed load with none.</summary>
     public IReadOnlyList<CalendarFeed> Calendars { get; init; } = [];
+
+    /// <summary>Images from <see cref="BackgroundStore"/> the dashboard shows behind everything, in turn.</summary>
+    public IReadOnlyList<string> Backgrounds { get; init; } = [];
+
+    /// <summary>How long each background shows, in minutes.</summary>
+    public int BackgroundMinutes { get; init; } = 10;
+
+    public const int MaxBackgroundMinutes = 24 * 60;
 }
 
 /// <param name="Url">A published ICS link (https:// or webcal://).</param>

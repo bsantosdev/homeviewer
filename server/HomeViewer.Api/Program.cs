@@ -2,12 +2,14 @@ using HomeViewer.Api;
 using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
+// Relative paths are resolved against the content root; tests point this at a temp file.
+string SettingsPath(IServiceProvider sp) => Path.Combine(
+    builder.Environment.ContentRootPath,
+    sp.GetRequiredService<IConfiguration>().GetValue("SettingsPath", "data/settings.json")!);
+builder.Services.AddSingleton(sp => new SettingsStore(SettingsPath(sp)));
+// Background images live in a folder next to the settings file.
 builder.Services.AddSingleton(sp =>
-{
-    // Relative paths are resolved against the content root; tests point this at a temp file.
-    var path = sp.GetRequiredService<IConfiguration>().GetValue("SettingsPath", "data/settings.json");
-    return new SettingsStore(Path.Combine(builder.Environment.ContentRootPath, path));
-});
+    new BackgroundStore(Path.Combine(Path.GetDirectoryName(SettingsPath(sp))!, "backgrounds")));
 builder.Services.AddSignalR();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient(nameof(CalendarFeedReader), http => http.Timeout = TimeSpan.FromSeconds(20));
@@ -38,16 +40,43 @@ app.UseStaticFiles(staticFiles);
 
 app.MapGet("/api/settings", (SettingsStore store) => store.Get());
 
-app.MapPut("/api/settings", async (DashboardSettings settings, SettingsStore store, IHubContext<DashboardHub> hub) =>
+app.MapPut("/api/settings", async (DashboardSettings settings, SettingsStore store, BackgroundStore backgrounds, IHubContext<DashboardHub> hub) =>
 {
     if (settings.Calendars.FirstOrDefault(c => !c.HasValidUrl) is { } noLink)
         return Results.BadRequest($"Calendar \"{noLink.Name}\" needs an https:// or webcal:// link.");
     if (settings.Calendars.FirstOrDefault(c => !c.HasValidColor) is { } noColor)
         return Results.BadRequest($"Calendar \"{noColor.Name}\" needs a colour like #3b82f6.");
+    if (settings.BackgroundMinutes is < 1 or > DashboardSettings.MaxBackgroundMinutes)
+        return Results.BadRequest($"Backgrounds can change every 1 to {DashboardSettings.MaxBackgroundMinutes} minutes.");
+    if (settings.Backgrounds.Any(name => backgrounds.PathOf(name) is null))
+        return Results.BadRequest("A background image is missing. Remove it and add it again.");
 
     store.Save(settings);
+    // Uploads that didn't make it into the saved settings, and images just removed, aren't needed any more.
+    backgrounds.DeleteAllExcept(settings.Backgrounds);
     await hub.Clients.All.SendAsync("SettingsUpdated", settings);
     return Results.Ok(settings);
+});
+
+// The image body is sent as is. It's only kept if the next saved settings list it.
+app.MapPost("/api/backgrounds", async (HttpRequest request, BackgroundStore backgrounds, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        return Results.Ok(new BackgroundUpload(await backgrounds.SaveAsync(request.Body, cancellationToken)));
+    }
+    catch (InvalidDataException ex)
+    {
+        return Results.BadRequest(ex.Message);
+    }
+});
+
+app.MapGet("/api/backgrounds/{name}", (string name, BackgroundStore backgrounds, HttpResponse response) =>
+{
+    if (backgrounds.PathOf(name) is not { } path) return Results.NotFound();
+    // A stored image never changes, since every upload gets a new name.
+    response.Headers.CacheControl = "public, max-age=31536000, immutable";
+    return Results.File(path, BackgroundStore.ContentTypeOf(name));
 });
 
 // The client asks for its own local days; a range is capped to keep recurring events cheap to expand.

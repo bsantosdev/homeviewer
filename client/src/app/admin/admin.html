@@ -90,6 +90,49 @@
           Add calendar
         </button>
       </fieldset>
+      <fieldset class="mb-5">
+        <legend class="mb-1">Background images</legend>
+        <p class="mb-2 text-sm opacity-70">
+          Shown behind the dashboard, one at a time. Photos are made smaller before they upload.
+        </p>
+        <div class="flex flex-wrap">
+          @for (name of f.backgrounds; track name; let i = $index) {
+            <div class="background relative mb-2 mr-2 h-20 w-32 overflow-hidden rounded">
+              <img class="h-full w-full object-cover" alt="" [src]="backgroundUrl(name)" />
+              <button
+                type="button"
+                class="absolute right-1 top-1 rounded bg-black/60 px-1.5 text-sm text-white"
+                [attr.aria-label]="'Remove background ' + (i + 1)"
+                (click)="removeBackground(f, name)"
+              >
+                ✕
+              </button>
+            </div>
+          }
+        </div>
+        <label class="mb-3.5 inline-block cursor-pointer text-sm underline">
+          Add images
+          <input
+            class="add-backgrounds sr-only"
+            type="file"
+            accept="image/*"
+            multiple
+            (change)="addBackgrounds($event)"
+          />
+        </label>
+        <label class="flex flex-col">
+          Change image every (minutes)
+          <input
+            class="field"
+            name="backgroundMinutes"
+            type="number"
+            min="1"
+            max="1440"
+            step="1"
+            [(ngModel)]="f.backgroundMinutes"
+          />
+        </label>
+      </fieldset>
       <div class="flex items-center">
         <button
           type="submit"

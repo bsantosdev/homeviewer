@@ -32,9 +32,11 @@ module.exports = {
       },
       keyframes: {
         flash: { to: { visibility: 'hidden' } },
+        fade: { from: { opacity: '0' } },
       },
       animation: {
         flash: 'flash 1s steps(2, start) infinite',
+        'fade-in': 'fade 2s ease-in-out',
       },
     },
   },

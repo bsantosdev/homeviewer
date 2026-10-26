@@ -11,6 +11,7 @@ import {
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { BulbIcon, StopWatchIcon } from '@hugeicons/core-free-icons';
 import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
+import { Background } from '../background/background';
 import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService } from '../lights.service';
 import { Lights } from '../lights/lights';
@@ -29,12 +30,12 @@ type Panel = 'timer' | 'lights';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [DatePipe, HugeiconsIconComponent, Lights, Timer],
+  imports: [Background, DatePipe, HugeiconsIconComponent, Lights, Timer],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class:
-      'relative box-border flex h-screen flex-col justify-between bg-[#f7f7f5] px-[5vw] py-[4vh] text-center text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
+      'relative z-0 box-border flex h-screen flex-col justify-between bg-[#f7f7f5] px-[5vw] py-[4vh] text-center text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
     '[class.dark]': 'isDark()',
   },
 })
