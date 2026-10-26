@@ -1,6 +1,9 @@
 import { CalendarEvent } from './calendar.service';
 
-export const MAX_EVENTS_PER_DAY = 4;
+/** How many days the agenda covers, today included. */
+export const AGENDA_DAYS = 7;
+
+const DAY_LABELS = ['Today', 'Tomorrow'];
 
 export interface AgendaItem {
   title: string;
@@ -13,10 +16,11 @@ export interface AgendaItem {
 }
 
 export interface AgendaDay {
-  label: string;
+  /** Local midnight. */
+  date: Date;
+  /** "Today" or "Tomorrow"; later days are shown by their date. */
+  label: string | null;
   items: AgendaItem[];
-  /** How many more events there are than fit on screen. */
-  more: number;
 }
 
 /** Local midnight, `days` days after the day of `date`. */
@@ -24,10 +28,13 @@ export function startOfDay(date: Date, days = 0): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days);
 }
 
-/** Today's and tomorrow's events, in local time. Today leaves out events that have already ended. */
+/**
+ * The events of the next {@link AGENDA_DAYS} days, in local time. Today is always there and leaves out
+ * events that have already ended; later days only appear when something is planned.
+ */
 export function agenda(events: CalendarEvent[], now: Date): AgendaDay[] {
   const parsed = events.map((e) => ({ ...e, startAt: parse(e.start), endAt: parse(e.end) }));
-  return ['Today', 'Tomorrow'].map((label, offset) => {
+  const days = Array.from({ length: AGENDA_DAYS }, (_, offset): AgendaDay => {
     const dayStart = startOfDay(now, offset);
     const dayEnd = startOfDay(now, offset + 1);
     const notBefore = offset === 0 ? now : dayStart;
@@ -47,11 +54,12 @@ export function agenda(events: CalendarEvent[], now: Date): AgendaDay[] {
         textColor: textColorOn(e.color),
       }));
     return {
-      label,
-      items: items.slice(0, MAX_EVENTS_PER_DAY),
-      more: Math.max(0, items.length - MAX_EVENTS_PER_DAY),
+      date: dayStart,
+      label: offset < DAY_LABELS.length ? DAY_LABELS[offset] : null,
+      items,
     };
   });
+  return days.filter((day, offset) => offset === 0 || day.items.length);
 }
 
 /** Black on light colours, white on dark ones, using the WCAG relative luminance. */

@@ -71,7 +71,7 @@ describe('Dashboard', () => {
 
     expect(text(el, 'h1')).toBe('Home');
     expect(text(el, 'header p')).toBe('Welcome home!');
-    expect(text(el, 'main div')).toBe('14:05');
+    expect(text(el, '.clock')).toBe('14:05');
     expect(el.textContent).toContain('Friday, 23 October');
     expect(current).toHaveBeenCalledWith(38.72, -9.14);
     expect(text(el, 'footer .weather-temp')).toBe('21°');
@@ -120,7 +120,7 @@ describe('Dashboard', () => {
     vi.setSystemTime(new Date(2026, 9, 23, 14, 6));
     vi.advanceTimersByTime(1000);
     await fixture.whenStable();
-    expect(text(el, 'main div')).toBe('14:06');
+    expect(text(el, '.clock')).toBe('14:06');
   });
 
   it('refreshes the weather periodically and when the location changes', async () => {
@@ -170,7 +170,7 @@ describe('Dashboard', () => {
     toggle.click();
     await fixture.whenStable();
     expect(el.querySelector('app-timer')).toBeNull();
-    expect(text(el, 'main div')).toBe('14:05');
+    expect(text(el, '.clock')).toBe('14:05');
   });
 
   it('stops its timers when destroyed', async () => {
@@ -219,7 +219,7 @@ describe('Dashboard', () => {
       toggle?.click();
       await fixture.whenStable();
       expect(el.querySelector('app-lights')).toBeNull();
-      expect(text(el, 'main div')).toBe('14:05');
+      expect(text(el, '.clock')).toBe('14:05');
       expect(loadLights).toHaveBeenCalledTimes(2);
     });
 
@@ -248,7 +248,7 @@ describe('Dashboard', () => {
 
       expect(lightsButton()).toBeNull();
       expect(el.querySelector('app-lights')).toBeNull();
-      expect(text(el, 'main div')).toBe('14:05');
+      expect(text(el, '.clock')).toBe('14:05');
     });
 
     it('refreshes the lights periodically', async () => {
@@ -267,7 +267,9 @@ describe('Dashboard', () => {
 
     function sections(): string[] {
       return Array.from(el.querySelectorAll('.agenda section'), (section) =>
-        Array.from(section.querySelectorAll('h2, span, p'), (n) => n.textContent.trim()).join(' '),
+        Array.from(section.querySelectorAll('h2, .calendar-badge, .time, .title, p'), (n) =>
+          n.textContent.trim(),
+        ).join(' '),
       );
     }
 
@@ -277,7 +279,7 @@ describe('Dashboard', () => {
       expect(events).not.toHaveBeenCalled();
     });
 
-    it('shows the events for today and tomorrow', async () => {
+    it('lists the week’s events by day, next to a smaller clock', async () => {
       events.mockResolvedValue([
         {
           title: 'Football',
@@ -295,14 +297,28 @@ describe('Dashboard', () => {
           start: '2026-10-24',
           end: '2026-10-25',
         },
+        {
+          title: 'Dentist',
+          calendar: 'Work',
+          color: '#1e3a8a',
+          allDay: false,
+          start: new Date(2026, 9, 28, 9, 30).toISOString(),
+          end: new Date(2026, 9, 28, 10, 0).toISOString(),
+        },
       ]);
 
       await loadSettings(WITH_CALENDAR);
       await settle();
 
-      // Local midnight today until the day after tomorrow.
-      expect(events).toHaveBeenCalledWith(new Date(2026, 9, 23), new Date(2026, 9, 25));
-      expect(sections()).toEqual(['Today 17:00 Football Family', 'Tomorrow All day Market Family']);
+      // Local midnight today until a week later.
+      expect(events).toHaveBeenCalledWith(new Date(2026, 9, 23), new Date(2026, 9, 30));
+      expect(sections()).toEqual([
+        'Today Family 17:00 Football',
+        'Tomorrow Family All day Market',
+        'Wednesday, 28 October Work 09:30 Dentist',
+      ]);
+      expect(el.querySelector('.text-clock-half')?.textContent.trim()).toBe('14:05');
+      expect(el.querySelector('.text-clock')).toBeNull();
     });
 
     it("badges each event with its calendar's name and colour", async () => {
@@ -326,23 +342,25 @@ describe('Dashboard', () => {
       expect(badge.style.color).toBe('rgb(255, 255, 255)');
     });
 
-    it('says when a day has nothing planned or more than fits', async () => {
-      events.mockResolvedValue(
-        Array.from({ length: 6 }, (_, i) => ({
-          title: `Event ${String(i)}`,
+    it('says when nothing is planned today and skips other empty days', async () => {
+      events.mockResolvedValue([
+        {
+          title: 'Market',
           calendar: 'Family',
           color: '#ef4444',
           allDay: true,
-          start: '2026-10-24',
-          end: '2026-10-25',
-        })),
-      );
+          start: '2026-10-25',
+          end: '2026-10-26',
+        },
+      ]);
 
       await loadSettings(WITH_CALENDAR);
       await settle();
 
-      expect(text(el, '.agenda section:first-child p')).toBe('Nothing planned');
-      expect(text(el, '.agenda section:last-child p')).toBe('+2 more');
+      expect(sections()).toEqual([
+        'Today Nothing planned',
+        'Sunday, 25 October Family All day Market',
+      ]);
     });
 
     it('refreshes periodically and when the calendar links change', async () => {

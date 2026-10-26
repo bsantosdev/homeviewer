@@ -1,4 +1,4 @@
-import { MAX_EVENTS_PER_DAY, agenda, startOfDay, textColorOn } from './agenda';
+import { AGENDA_DAYS, agenda, startOfDay, textColorOn } from './agenda';
 import { CalendarEvent } from './calendar.service';
 
 /** An ISO time for a local time on a day in October 2026, so tests pass in any time zone. */
@@ -17,22 +17,49 @@ function allDay(title: string, start: string, end: string): CalendarEvent {
 // Saturday 24 October 2026, 10:00 local time.
 const NOW = new Date(2026, 9, 24, 10, 0);
 
-function labels(events: CalendarEvent[]): string[][] {
-  return agenda(events, NOW).map((day) => day.items.map((i) => `${i.time} ${i.title}`));
+/** Each shown day's label (or date) and items, as "Today: 09:00 Swim". */
+function labels(events: CalendarEvent[]): string[] {
+  return agenda(events, NOW).map(
+    (day) =>
+      `${day.label ?? String(day.date.getDate())}: ${day.items.map((i) => `${i.time} ${i.title}`).join(', ')}`,
+  );
 }
 
 describe('agenda', () => {
-  it('splits events into today and tomorrow', () => {
+  it('splits events into today, tomorrow and later days', () => {
     const days = agenda(
-      [timed('Lunch', at(24, 12, 30), at(24, 13, 30)), timed('Match', at(25, 15), at(25, 17))],
+      [
+        timed('Lunch', at(24, 12, 30), at(24, 13, 30)),
+        timed('Match', at(25, 15), at(25, 17)),
+        timed('Dentist', at(28, 9), at(28, 9, 30)),
+      ],
       NOW,
     );
 
     const badge = { calendar: 'Home', color: '#3b82f6', textColor: '#000' };
     expect(days).toEqual([
-      { label: 'Today', items: [{ title: 'Lunch', time: '12:30', ...badge }], more: 0 },
-      { label: 'Tomorrow', items: [{ title: 'Match', time: '15:00', ...badge }], more: 0 },
+      {
+        date: new Date(2026, 9, 24),
+        label: 'Today',
+        items: [{ title: 'Lunch', time: '12:30', ...badge }],
+      },
+      {
+        date: new Date(2026, 9, 25),
+        label: 'Tomorrow',
+        items: [{ title: 'Match', time: '15:00', ...badge }],
+      },
+      {
+        date: new Date(2026, 9, 28),
+        label: null,
+        items: [{ title: 'Dentist', time: '09:00', ...badge }],
+      },
     ]);
+  });
+
+  it(`covers ${String(AGENDA_DAYS)} days`, () => {
+    expect(
+      labels([timed('Last day', at(30, 20), at(30, 21)), timed('Too late', at(31, 9), at(31, 10))]),
+    ).toEqual(['Today: ', '30: 20:00 Last day']);
   });
 
   it('leaves out events that ended earlier today but keeps ongoing ones', () => {
@@ -41,20 +68,20 @@ describe('agenda', () => {
         timed('Breakfast', at(24, 8), at(24, 9)),
         timed('Ends now', at(24, 9), at(24, 10)),
         timed('Cleaning', at(24, 9, 30), at(24, 11)),
-      ])[0],
-    ).toEqual(['09:30 Cleaning']);
+      ]),
+    ).toEqual(['Today: 09:30 Cleaning']);
   });
 
   it('reads all-day dates as local days', () => {
     expect(labels([allDay('Birthday', '2026-10-25', '2026-10-26')])).toEqual([
-      [],
-      ['All day Birthday'],
+      'Today: ',
+      'Tomorrow: All day Birthday',
     ]);
   });
 
   it('reads times without a zone as local times', () => {
-    expect(labels([timed('Dinner', '2026-10-24T19:00:00', '2026-10-24T21:00:00')])[0]).toEqual([
-      '19:00 Dinner',
+    expect(labels([timed('Dinner', '2026-10-24T19:00:00', '2026-10-24T21:00:00')])).toEqual([
+      'Today: 19:00 Dinner',
     ]);
   });
 
@@ -66,8 +93,12 @@ describe('agenda', () => {
         timed('Party', at(24, 23), at(25, 1, 30)),
       ]),
     ).toEqual([
-      ['All day Holiday', 'All day Trip', '23:00 Party'],
-      ['All day Holiday', 'All day Trip', 'to 01:30 Party'],
+      'Today: All day Holiday, All day Trip, 23:00 Party',
+      'Tomorrow: All day Holiday, All day Trip, to 01:30 Party',
+      '26: All day Holiday, to 08:00 Trip',
+      '27: All day Holiday',
+      '28: All day Holiday',
+      '29: All day Holiday',
     ]);
   });
 
@@ -78,26 +109,20 @@ describe('agenda', () => {
         timed('Bake', at(25, 9), at(25, 10)),
         timed('Arts', at(25, 9), at(25, 10)),
         allDay('Market', '2026-10-25', '2026-10-26'),
-      ])[1],
-    ).toEqual(['All day Market', '09:00 Arts', '09:00 Bake', '18:00 Swim']);
+      ]),
+    ).toEqual(['Today: ', 'Tomorrow: All day Market, 09:00 Arts, 09:00 Bake, 18:00 Swim']);
   });
 
-  it(`shows at most ${String(MAX_EVENTS_PER_DAY)} events a day and counts the rest`, () => {
-    const events = Array.from({ length: MAX_EVENTS_PER_DAY + 2 }, (_, i) =>
+  it('keeps every event of a day', () => {
+    const events = Array.from({ length: 8 }, (_, i) =>
       timed(`Event ${String(i)}`, at(25, 8 + i), at(25, 9 + i)),
     );
 
-    const tomorrow = agenda(events, NOW)[1];
-
-    expect(tomorrow.items.length).toBe(MAX_EVENTS_PER_DAY);
-    expect(tomorrow.more).toBe(2);
+    expect(agenda(events, NOW)[1].items.length).toBe(8);
   });
 
-  it('returns empty days when there is nothing planned', () => {
-    expect(agenda([], NOW)).toEqual([
-      { label: 'Today', items: [], more: 0 },
-      { label: 'Tomorrow', items: [], more: 0 },
-    ]);
+  it('keeps today when nothing is planned, and only today', () => {
+    expect(agenda([], NOW)).toEqual([{ date: new Date(2026, 9, 24), label: 'Today', items: [] }]);
   });
 });
 

@@ -19,6 +19,8 @@ module.exports = {
       // The dashboard scales with the screen height, so sizes are in vh.
       fontSize: {
         clock: ['22vh', '1'],
+        // Fits "HH:mm" in half the width of an iPad held landscape.
+        'clock-half': ['18vh', '1'],
         countdown: ['18vh', '1'],
         wheel: ['8vh', '10vh'],
         'vh-6': '6vh',
