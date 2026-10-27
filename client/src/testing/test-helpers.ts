@@ -16,6 +16,7 @@ export const TEST_SETTINGS: DashboardSettings = {
   nightMode: false,
   nightStart: '22:00',
   nightEnd: '07:00',
+  sceneShortcuts: [],
 };
 
 /** A stand-in for the SignalR connection that lets tests fire hub events. */

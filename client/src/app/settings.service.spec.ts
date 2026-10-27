@@ -86,6 +86,21 @@ describe('SettingsService', () => {
     expect(service.settings()).toEqual(reloaded);
   });
 
+  it('counts reconnects, but not the first connection or a reconnect without a drop', () => {
+    const service = create();
+    http.expectOne('/api/settings').flush(TEST_SETTINGS);
+    expect(service.reconnects()).toBe(0);
+
+    hub.reconnected?.();
+    expect(service.reconnects()).toBe(0);
+
+    hub.reconnecting?.();
+    hub.reconnected?.();
+    http.expectOne('/api/settings').flush(TEST_SETTINGS);
+    http.expectOne('/').flush('<html></html>');
+    expect(service.reconnects()).toBe(1);
+  });
+
   it('logs when the settings can’t be fetched', () => {
     const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const service = create();

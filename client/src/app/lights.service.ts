@@ -29,6 +29,11 @@ export interface Scene {
   colors: string[];
 }
 
+/** A scene with the name of its room, for picking shortcuts across rooms. */
+export interface RoomScene extends Scene {
+  room: string;
+}
+
 /** What to change on a room; leave a value out to keep it. Send a temperature or a colour, not both. */
 export interface RoomChange {
   on?: boolean;
@@ -88,8 +93,19 @@ export class LightsService {
     }
   }
 
+  /** Turns off every room that's on. */
+  async allOff(): Promise<void> {
+    const on = (this.rooms() ?? []).filter((room) => room.on);
+    await Promise.all(on.map((room) => this.change(room.id, { on: false })));
+  }
+
   scenes(roomId: string): Promise<Scene[]> {
     return firstValueFrom(this.http.get<Scene[]>(`/api/rooms/${roomId}/scenes`));
+  }
+
+  /** Every room's scenes, by room and name. */
+  allScenes(): Promise<RoomScene[]> {
+    return firstValueFrom(this.http.get<RoomScene[]>('/api/scenes'));
   }
 
   /** Turns the scene on, then reads back how its room looks. */

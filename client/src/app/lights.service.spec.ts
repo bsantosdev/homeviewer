@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { COLOR_REFRESH_MS, LightsService, Room, Scene } from './lights.service';
+import { COLOR_REFRESH_MS, LightsService, Room, RoomScene, Scene } from './lights.service';
 import { provideTestBackend } from '../testing/test-helpers';
 
 const LIVING: Room = {
@@ -130,6 +130,34 @@ describe('LightsService', () => {
     http.expectOne('/api/rooms/living-id/scenes').flush(scenes);
 
     expect(await loading).toEqual(scenes);
+  });
+
+  it('fetches every room’s scenes', async () => {
+    const scenes: RoomScene[] = [
+      { id: 'relax-id', name: 'Relax', room: 'Living room', colors: [] },
+    ];
+
+    const loading = service.allScenes();
+    http.expectOne('/api/scenes').flush(scenes);
+
+    expect(await loading).toEqual(scenes);
+  });
+
+  it('turns off every room that is on', async () => {
+    await loadHome();
+
+    const switching = service.allOff();
+    const req = http.expectOne({ method: 'PUT', url: '/api/rooms/living-id' });
+    expect(req.request.body).toEqual({ on: false });
+    req.flush(null);
+    await switching;
+
+    expect(service.rooms()?.map((room) => room.on)).toEqual([false, false]);
+  });
+
+  it('has nothing to turn off before the rooms load', async () => {
+    await service.allOff();
+    http.expectNone({ method: 'PUT' });
   });
 
   describe('reading colours back', () => {

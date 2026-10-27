@@ -16,6 +16,8 @@ const MAINLY_CLEAR: Weather = {
   description: 'Mainly clear',
   condition: 'partly-cloudy',
   isDay: true,
+  rain: null,
+  days: [],
 };
 
 const WITH_CALENDAR = {
@@ -147,6 +149,35 @@ describe('Dashboard', () => {
     expect(current).toHaveBeenCalledTimes(1);
   });
 
+  it('says when rain is coming, and forecasts the next days', async () => {
+    current.mockResolvedValue({
+      ...MAINLY_CLEAR,
+      rain: 'Rain from 16:00',
+      days: [
+        { date: new Date(2026, 9, 24), min: 12, max: 19, condition: 'rain' },
+        { date: new Date(2026, 9, 25), min: 11, max: 20, condition: 'unknown' },
+      ],
+    });
+    await loadSettings();
+    await Promise.resolve();
+    await fixture.whenStable();
+
+    expect(text(el, '.weather-rain')).toBe('Rain from 16:00');
+    const days = Array.from(el.querySelectorAll('.weather-day'), (d) =>
+      d.textContent.replace(/\s+/g, ' ').trim(),
+    );
+    expect(days).toEqual(['Sat 19° 12°', 'Sun 20° 11°']);
+    expect(el.querySelectorAll('.weather-day hugeicons-icon')).toHaveLength(1);
+  });
+
+  it('leaves out the rain note and forecast without them', async () => {
+    await loadSettings();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(el.querySelector('.weather-rain')).toBeNull();
+    expect(el.querySelector('.weather-day')).toBeNull();
+  });
+
   it('logs weather errors and keeps running', async () => {
     const error = new Error('offline');
     current.mockRejectedValue(error);
@@ -256,7 +287,7 @@ describe('Dashboard', () => {
     });
   });
 
-  describe('side bar', () => {
+  describe('top bar', () => {
     function navButton(label: string): HTMLButtonElement | null {
       return el.querySelector<HTMLButtonElement>(`nav button[aria-label="${label}"]`);
     }
@@ -276,6 +307,7 @@ describe('Dashboard', () => {
       await loadSettings();
       expect(Array.from(el.querySelectorAll('nav button'), (b) => b.ariaLabel)).toEqual([
         'Home',
+        'Shopping list',
         'Timer',
         'Email',
       ]);
@@ -297,6 +329,33 @@ describe('Dashboard', () => {
       await go('Home');
       expect(el.querySelector('app-timer')).toBeNull();
       expect(text(el, '.clock')).toBe('14:05');
+    });
+
+    it('opens the shopping list, and shows on its button how much is left to buy', async () => {
+      await loadSettings();
+      TestBed.inject(HttpTestingController)
+        .expectOne('/api/shopping')
+        .flush([
+          { id: '1', text: 'Milk', done: false },
+          { id: '2', text: 'Bread', done: false },
+          { id: '3', text: 'Eggs', done: true },
+        ]);
+      // Let the list's promise resolve before rendering.
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+      expect(text(el, 'nav .to-buy')).toBe('2');
+
+      await go('Shopping list');
+      expect(el.querySelectorAll('app-shopping-list .item')).toHaveLength(3);
+      expect(current()).toEqual(['Shopping list']);
+    });
+
+    it('has no badge when there is nothing to buy', async () => {
+      await loadSettings();
+      TestBed.inject(HttpTestingController).expectOne('/api/shopping').flush([]);
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+      expect(el.querySelector('nav .to-buy')).toBeNull();
     });
 
     it('has a place for email', async () => {

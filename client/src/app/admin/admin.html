@@ -168,6 +168,27 @@
           </label>
         </div>
       </fieldset>
+      @if (scenes().length) {
+        <fieldset class="mb-5">
+          <legend class="mb-1">Scene shortcuts</legend>
+          <p class="mb-2 text-sm opacity-70">
+            Hue scenes to show as buttons next to the lights on the home screen, in the order you
+            tick them.
+          </p>
+          @for (scene of scenes(); track scene.id) {
+            <label class="mb-1.5 flex items-center">
+              <input
+                #box
+                class="mr-2"
+                type="checkbox"
+                [checked]="f.sceneShortcuts.includes(scene.id)"
+                (change)="toggleShortcut(f, scene.id, box.checked)"
+              />
+              {{ scene.room }} · {{ scene.name }}
+            </label>
+          }
+        </fieldset>
+      }
       <div class="flex items-center">
         <button
           type="submit"

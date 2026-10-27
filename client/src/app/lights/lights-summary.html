@@ -1,7 +1,49 @@
-<h2 class="card-title flex justify-between">
+<h2 class="card-title flex items-center justify-between">
   <span>Lights</span>
-  <span class="on-count normal-case tracking-normal">{{ onCount() }} on</span>
+  <span class="flex items-center">
+    <span class="on-count normal-case tracking-normal">{{ onCount() }} on</span>
+    @if (onCount()) {
+      <button
+        type="button"
+        class="all-off ml-[1.5vh] rounded-full bg-neutral-500/20 px-[1.6vh] py-[0.5vh] text-[2vh] font-semibold uppercase tracking-wide [-webkit-tap-highlight-color:transparent]"
+        (click)="service.allOff()"
+      >
+        All off
+      </button>
+    }
+  </span>
 </h2>
+@if (shortcuts().length) {
+  <!-- Wraps onto more rows as needed; spacing is margins, not gap, for iOS 12. -->
+  <div class="-mr-[1vh] mb-[1vh] flex flex-wrap">
+    @for (scene of shortcuts(); track scene.id) {
+      <button
+        type="button"
+        class="scene mb-[1vh] mr-[1vh] flex max-w-full items-center rounded-full bg-neutral-500/20 py-[0.8vh] pl-[1vh] pr-[1.6vh] text-left text-[2.2vh] [-webkit-tap-highlight-color:transparent]"
+        [attr.aria-label]="scene.name + ', ' + scene.room"
+        (click)="service.recall(scene.id)"
+      >
+        <span class="mr-[1vh] flex shrink-0">
+          @for (color of scene.colors; track $index) {
+            <span
+              class="-mr-[0.8vh] inline-block h-[2.4vh] w-[2.4vh] rounded-full border border-solid border-white/70 last:mr-0"
+              [style.background-color]="color"
+            ></span>
+          } @empty {
+            <span
+              class="inline-block h-[2.4vh] w-[2.4vh] rounded-full border border-solid border-white/70"
+              [style.background-color]="defaultColor"
+            ></span>
+          }
+        </span>
+        <span class="min-w-0 truncate">
+          <span class="scene-name font-medium">{{ scene.name }}</span>
+          <span class="scene-room opacity-60"> · {{ scene.room }}</span>
+        </span>
+      </button>
+    }
+  </div>
+}
 <!-- Two rooms to a row; spacing is padding, not gap, for iOS 12. -->
 <div class="flex flex-wrap">
   @for (room of rooms(); track room.id) {

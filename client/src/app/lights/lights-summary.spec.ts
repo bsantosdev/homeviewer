@@ -1,9 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { LightsSummary } from './lights-summary';
-import { LightsService, Room } from '../lights.service';
+import { LightsService, Room, RoomScene } from '../lights.service';
 import { DEFAULT_COLOR } from './room-tile';
-import { provideTestBackend, query, text } from '../../testing/test-helpers';
+import {
+  TEST_SETTINGS,
+  button,
+  provideTestBackend,
+  query,
+  settle,
+  text,
+} from '../../testing/test-helpers';
 
 const LIVING: Room = {
   id: 'living-id',
@@ -33,18 +40,31 @@ const PORCH: Room = {
   canColor: false,
 };
 
+const RELAX: RoomScene = {
+  id: 'relax-id',
+  name: 'Relax',
+  room: 'Living room',
+  colors: ['#ff942c'],
+};
+const READ: RoomScene = { id: 'read-id', name: 'Read', room: 'Kitchen', colors: [] };
+
 describe('LightsSummary', () => {
   let fixture: ComponentFixture<LightsSummary>;
   let el: HTMLElement;
   let http: HttpTestingController;
 
-  async function show(rooms: Room[] | null): Promise<void> {
+  async function show(rooms: Room[] | null, sceneShortcuts: string[] = []): Promise<void> {
     TestBed.configureTestingModule({ providers: provideTestBackend() });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(LightsService).rooms.set(rooms);
     fixture = TestBed.createComponent(LightsSummary);
     el = fixture.nativeElement as HTMLElement;
+    http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, sceneShortcuts });
     await fixture.whenStable();
+  }
+
+  function shortcuts(): string[] {
+    return Array.from(el.querySelectorAll('.scene'), (b) => String(b.getAttribute('aria-label')));
   }
 
   function row(name: string): HTMLElement {
@@ -103,5 +123,51 @@ describe('LightsSummary', () => {
   it('shows nothing before the rooms load', async () => {
     await show(null);
     expect(el.querySelectorAll('.room')).toHaveLength(0);
+  });
+
+  it('turns every room off', async () => {
+    await show([LIVING, BEDROOM, PORCH]);
+
+    button(el, 'All off').click();
+    await fixture.whenStable();
+
+    const sent = http
+      .match({ method: 'PUT' })
+      .map((req): [string, unknown] => [req.request.url, req.request.body]);
+    expect(sent).toEqual([
+      ['/api/rooms/living-id', { on: false }],
+      ['/api/rooms/porch-id', { on: false }],
+    ]);
+    expect(text(el, '.on-count')).toBe('0 on');
+    expect(el.querySelector('.all-off')).toBeNull();
+  });
+
+  it('has no scene shortcuts until some are picked', async () => {
+    await show([LIVING]);
+    http.expectNone('/api/scenes');
+    expect(shortcuts()).toEqual([]);
+  });
+
+  it('shows the picked scenes in order, and recalls one', async () => {
+    await show([LIVING], ['read-id', 'gone-id', 'relax-id']);
+    http.expectOne('/api/scenes').flush([RELAX, READ]);
+    await settle(fixture);
+
+    expect(shortcuts()).toEqual(['Read, Kitchen', 'Relax, Living room']);
+    expect(text(el, '.scene .scene-name')).toBe('Read');
+
+    query(el, '.scene[aria-label="Relax, Living room"]').click();
+    expect(http.expectOne({ method: 'POST', url: '/api/scenes/relax-id/recall' })).toBeTruthy();
+  });
+
+  it('logs scenes that fail to load', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await show([LIVING], ['relax-id']);
+    http.expectOne('/api/scenes').flush('down', { status: 502, statusText: 'Bad Gateway' });
+    await settle(fixture);
+
+    expect(log).toHaveBeenCalledWith('Scenes fetch failed', expect.anything());
+    expect(shortcuts()).toEqual([]);
+    log.mockRestore();
   });
 });

@@ -3,7 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 import { IMAGE_SHRINKER } from '../backgrounds';
-import { SettingsService } from '../settings.service';
+import { DashboardSettings, SettingsService } from '../settings.service';
 import { Admin, CALENDAR_COLORS } from './admin';
 
 describe('Admin', () => {
@@ -210,6 +210,52 @@ describe('Admin', () => {
       nightMode: true,
       nightStart: '23:30',
       nightEnd: '06:15',
+    });
+  });
+
+  describe('scene shortcuts', () => {
+    const SCENES = [
+      { id: 'read-id', name: 'Read', room: 'Kitchen', colors: [] },
+      { id: 'relax-id', name: 'Relax', room: 'Living room', colors: [] },
+    ];
+
+    function box(label: string): HTMLInputElement {
+      const match = Array.from(el.querySelectorAll('label')).find(
+        (l) => l.textContent.trim() === label,
+      );
+      if (!match) throw new Error(`No label "${label}"`);
+      return query(match, 'input', HTMLInputElement);
+    }
+
+    it('picks scenes in the order they are ticked', async () => {
+      await loadSettings();
+      http.expectOne('/api/scenes').flush(SCENES);
+      await settle();
+
+      box('Living room · Relax').click();
+      await fixture.whenStable();
+      box('Kitchen · Read').click();
+      await fixture.whenStable();
+      box('Living room · Relax').click();
+      await fixture.whenStable();
+      box('Living room · Relax').click();
+      await fixture.whenStable();
+      expect(box('Kitchen · Read').checked).toBe(true);
+      await submit();
+
+      const saved = http.expectOne({ method: 'PUT', url: '/api/settings' }).request
+        .body as DashboardSettings;
+      expect(saved.sceneShortcuts).toEqual(['read-id', 'relax-id']);
+    });
+
+    it('is hidden without a Hue bridge', async () => {
+      await loadSettings();
+      http
+        .expectOne('/api/scenes')
+        .flush('No bridge', { status: 503, statusText: 'Service Unavailable' });
+      await settle();
+
+      expect(el.textContent).not.toContain('Scene shortcuts');
     });
   });
 

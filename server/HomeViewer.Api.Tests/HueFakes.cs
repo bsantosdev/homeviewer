@@ -234,7 +234,7 @@ public static class HueJson
 
     /// <summary>
     /// Two living room scenes, out of name order: a warm white one, and a colourful one that turns a
-    /// light off, repeats a colour, and has a stray space in its name. Plus a kitchen scene.
+    /// light off, repeats a colour, and has a stray space in its name. Plus a kitchen scene, and a zone's.
     /// </summary>
     public const string Scenes = $$"""
         {
@@ -263,6 +263,13 @@ public static class HueJson
                 { "target": { "rid": "{{FloorId}}", "rtype": "light" }, "action": { "on": { "on": true }, "dimming": { "brightness": 56 }, "color_temperature": { "mirek": 446 } } },
                 { "target": { "rid": "{{SofaId}}", "rtype": "light" }, "action": { "on": { "on": true }, "color_temperature": { "mirek": 446 } } }
               ]
+            },
+            {
+              "id": "scene-zone",
+              "type": "scene",
+              "metadata": { "name": "Downstairs" },
+              "group": { "rid": "zone-downstairs", "rtype": "zone" },
+              "actions": []
             },
             {
               "id": "scene-read",
