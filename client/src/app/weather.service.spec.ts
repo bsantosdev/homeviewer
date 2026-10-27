@@ -1,6 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { OPEN_METEO_URL, WeatherService } from './weather.service';
+import { OPEN_METEO_URL, WeatherService, rainNote } from './weather.service';
+
+type Hourly = Record<'precipitation_probability' | 'precipitation', (number | null)[]> & {
+  time: string[];
+};
 import { provideTestBackend } from '../testing/test-helpers';
 
 describe('WeatherService', () => {
@@ -17,31 +21,67 @@ describe('WeatherService', () => {
     http.verify();
   });
 
-  function respond(weatherCode: number, isDay: 0 | 1 = 1): void {
+  const DRY_HOURS: Hourly = {
+    time: ['2026-10-23T14:00', '2026-10-23T15:00', '2026-10-23T16:00'],
+    precipitation_probability: [10, 20, 0],
+    precipitation: [0, 0, 0],
+  };
+
+  function respond(weatherCode: number, isDay: 0 | 1 = 1, hourly = DRY_HOURS): void {
     const req = http.expectOne((r) => r.url === OPEN_METEO_URL);
     expect(req.request.params.get('latitude')).toBe('38.72');
     expect(req.request.params.get('longitude')).toBe('-9.14');
     expect(req.request.params.get('current')).toBe('temperature_2m,weather_code,is_day');
-    expect(req.request.params.get('daily')).toBe('temperature_2m_min,temperature_2m_max');
+    expect(req.request.params.get('hourly')).toBe('precipitation_probability,precipitation');
+    expect(req.request.params.get('daily')).toBe(
+      'weather_code,temperature_2m_min,temperature_2m_max',
+    );
     expect(req.request.params.get('timezone')).toBe('auto');
-    expect(req.request.params.get('forecast_days')).toBe('1');
+    expect(req.request.params.get('forecast_days')).toBe('5');
+    expect(req.request.params.get('forecast_hours')).toBe('12');
     req.flush({
       current: { temperature_2m: 13.6, weather_code: weatherCode, is_day: isDay },
-      daily: { temperature_2m_min: [9.4], temperature_2m_max: [18.5] },
+      hourly,
+      daily: {
+        time: ['2026-10-23', '2026-10-24', '2026-10-25'],
+        weather_code: [3, 61, 42],
+        temperature_2m_min: [9.4, 11.2, 8],
+        temperature_2m_max: [18.5, 16.6, 20],
+      },
     });
   }
 
   it("returns the rounded temperature, today's range, description and condition", async () => {
     const weather = service.current(38.72, -9.14);
     respond(3);
-    expect(await weather).toEqual({
+    expect(await weather).toMatchObject({
       temperature: 14,
       min: 9,
       max: 19,
       description: 'Overcast',
       condition: 'cloudy',
       isDay: true,
+      rain: null,
     });
+  });
+
+  it('forecasts the days after today', async () => {
+    const weather = service.current(38.72, -9.14);
+    respond(3);
+    expect((await weather).days).toEqual([
+      { date: new Date(2026, 9, 24), min: 11, max: 17, condition: 'rain' },
+      { date: new Date(2026, 9, 25), min: 8, max: 20, condition: 'unknown' },
+    ]);
+  });
+
+  it('says when rain is likely, by chance or by amount', async () => {
+    const weather = service.current(38.72, -9.14);
+    respond(3, 1, {
+      time: ['2026-10-23T14:00', '2026-10-23T15:00', '2026-10-23T16:00'],
+      precipitation_probability: [null, 30, 70],
+      precipitation: [null, 0.6, 0],
+    });
+    expect((await weather).rain).toBe('Rain from 15:00');
   });
 
   it('reports night time', async () => {
@@ -67,5 +107,28 @@ describe('WeatherService', () => {
     const weather = service.current(38.72, -9.14);
     respond(42);
     expect(await weather).toMatchObject({ description: '', condition: 'unknown' });
+  });
+});
+
+describe('rainNote', () => {
+  const at = (time: string, wet: boolean) => ({ time, wet });
+
+  it('says when rain starts', () => {
+    expect(rainNote([at('14:00', false), at('15:00', true)])).toBe('Rain from 15:00');
+  });
+
+  it('says when rain stops', () => {
+    expect(rainNote([at('14:00', true), at('15:00', true), at('16:00', false)])).toBe(
+      'Rain until 16:00',
+    );
+  });
+
+  it('says when rain keeps on', () => {
+    expect(rainNote([at('14:00', true), at('15:00', true)])).toBe('Rain for the next hours');
+  });
+
+  it('says nothing when it stays dry, or without hours', () => {
+    expect(rainNote([at('14:00', false)])).toBeNull();
+    expect(rainNote([])).toBeNull();
   });
 });

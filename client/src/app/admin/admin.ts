@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@ang
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BackgroundsService, backgroundUrl } from '../backgrounds';
+import { LightsService, RoomScene } from '../lights.service';
 import { DashboardSettings, SettingsService } from '../settings.service';
 
 /** Colours for new calendars, in turn. */
@@ -27,6 +28,8 @@ export class Admin {
   protected readonly isDark = this.service.isDark;
   protected readonly form = signal<DashboardSettings | null>(null);
   protected readonly status = signal('');
+  /** Every room's Hue scenes to pick shortcuts from; empty while there's no bridge. */
+  protected readonly scenes = signal<RoomScene[]>([]);
 
   constructor() {
     // Take a copy of the settings once loaded, so edits don't touch the live signal.
@@ -37,8 +40,15 @@ export class Admin {
           ...s,
           calendars: s.calendars.map((c) => ({ ...c })),
           backgrounds: [...s.backgrounds],
+          sceneShortcuts: [...s.sceneShortcuts],
         });
     });
+    void this.loadScenes(inject(LightsService));
+  }
+
+  protected toggleShortcut(form: DashboardSettings, id: string, on: boolean): void {
+    const others = form.sceneShortcuts.filter((s) => s !== id);
+    this.form.set({ ...form, sceneShortcuts: on ? [...others, id] : others });
   }
 
   protected addCalendar(form: DashboardSettings): void {
@@ -80,6 +90,14 @@ export class Admin {
 
   protected removeBackground(form: DashboardSettings, name: string): void {
     this.form.set({ ...form, backgrounds: form.backgrounds.filter((b) => b !== name) });
+  }
+
+  private async loadScenes(lights: LightsService): Promise<void> {
+    try {
+      this.scenes.set(await lights.allScenes());
+    } catch {
+      // No bridge is set up, or it isn't answering: there's nothing to pick from.
+    }
   }
 
   protected async save(form: DashboardSettings): Promise<void> {

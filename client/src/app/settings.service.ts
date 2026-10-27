@@ -21,6 +21,8 @@ export interface DashboardSettings {
   /** "HH:mm", local time. Later than `nightEnd` when the night runs past midnight. */
   nightStart: string;
   nightEnd: string;
+  /** Hue scene ids offered as one-tap buttons next to the lights. */
+  sceneShortcuts: string[];
 }
 
 /** A published Outlook (ICS) calendar. The server downloads it; the link stays private to the home network. */
@@ -80,6 +82,8 @@ export class SettingsService {
   readonly isDark = computed(() => (this.settings()?.theme ?? 'dark') === 'dark');
   /** False once the server has been out of reach for a while, e.g. while it's stopped for maintenance. */
   readonly online = signal(true);
+  /** Goes up each time the connection comes back after dropping, so other data can catch up too. */
+  readonly reconnects = signal(0);
 
   private down = false;
   private offlineTimer?: ReturnType<typeof setTimeout>;
@@ -138,6 +142,7 @@ export class SettingsService {
     this.online.set(true);
     if (!this.down) return;
     this.down = false;
+    this.reconnects.update((n) => n + 1);
     // Catch up on anything missed while away (e.g. iPad sleep/wake, or a server restart).
     this.load();
     void this.reloadIfUpdated();

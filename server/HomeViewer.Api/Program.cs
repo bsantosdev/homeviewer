@@ -10,6 +10,9 @@ builder.Services.AddSingleton(sp => new SettingsStore(SettingsPath(sp)));
 // Background images live in a folder next to the settings file.
 builder.Services.AddSingleton(sp =>
     new BackgroundStore(Path.Combine(Path.GetDirectoryName(SettingsPath(sp))!, "backgrounds")));
+// The shopping list lives next to the settings too.
+builder.Services.AddSingleton(sp =>
+    new ShoppingStore(Path.Combine(Path.GetDirectoryName(SettingsPath(sp))!, "shopping.json")));
 builder.Services.AddSignalR();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpClient(nameof(CalendarFeedReader), http => http.Timeout = TimeSpan.FromSeconds(20));
@@ -101,9 +104,27 @@ app.MapGet("/api/rooms/{id:guid}/scenes", (Guid id, HueBridge hue, CancellationT
     CallHue(hue, null, async () =>
         await hue.GetScenesAsync(id, cancellationToken) is { } scenes ? Results.Ok(scenes) : Results.NotFound()));
 
+// Every room's scenes, for picking the dashboard's shortcuts.
+app.MapGet("/api/scenes", (HueBridge hue, CancellationToken cancellationToken) =>
+    CallHue(hue, null, async () => Results.Ok(await hue.GetAllScenesAsync(cancellationToken))));
+
 app.MapPost("/api/scenes/{id:guid}/recall", (Guid id, HueBridge hue, CancellationToken cancellationToken) =>
     CallHue(hue, null, async () =>
         await hue.RecallSceneAsync(id, cancellationToken) ? Results.NoContent() : Results.NotFound()));
+
+// Every change sends the whole list to every screen, so the wall and phones stay in step.
+app.MapGet("/api/shopping", (ShoppingStore shopping) => shopping.Get());
+
+app.MapPost("/api/shopping", async (NewShoppingItem item, ShoppingStore shopping, IHubContext<DashboardHub> hub) =>
+    item.IsValid
+        ? await ShoppingUpdated(hub, shopping.Add(item.Text!))
+        : Results.BadRequest($"Write what to buy, in at most {NewShoppingItem.MaxLength} characters."));
+
+app.MapPut("/api/shopping/{id:guid}", async (Guid id, ShoppingItemChange change, ShoppingStore shopping, IHubContext<DashboardHub> hub) =>
+    shopping.Change(id, change.Done) is { } items ? await ShoppingUpdated(hub, items) : Results.NotFound());
+
+app.MapDelete("/api/shopping/done", async (ShoppingStore shopping, IHubContext<DashboardHub> hub) =>
+    await ShoppingUpdated(hub, shopping.ClearDone()));
 
 app.MapHub<DashboardHub>("/hubs/dashboard");
 app.MapFallbackToFile("index.html", staticFiles);
@@ -124,6 +145,12 @@ static async Task<IResult> CallHue(HueBridge hue, LightChange? change, Func<Task
     {
         return Results.Problem(ex.Message, statusCode: 502);
     }
+}
+
+static async Task<IResult> ShoppingUpdated(IHubContext<DashboardHub> hub, IReadOnlyList<ShoppingItem> items)
+{
+    await hub.Clients.All.SendAsync("ShoppingUpdated", items);
+    return Results.Ok(items);
 }
 
 // Lets the test project start the app with WebApplicationFactory<Program>.

@@ -99,6 +99,17 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Put_saves_the_scene_shortcuts()
+    {
+        var updated = DashboardSettings.Default with { SceneShortcuts = ["scene-1", "scene-2"] };
+
+        (await _client.PutAsJsonAsync("/api/settings", updated)).EnsureSuccessStatusCode();
+
+        var settings = await _client.GetFromJsonAsync<DashboardSettings>("/api/settings");
+        Assert.Equal(["scene-1", "scene-2"], settings!.SceneShortcuts);
+    }
+
+    [Fact]
     public async Task Put_saves_the_calendars()
     {
         var updated = DashboardSettings.Default with { Calendars = [new("Family", "webcal://outlook.example/a.ics")] };

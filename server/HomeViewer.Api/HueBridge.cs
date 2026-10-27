@@ -33,6 +33,9 @@ public record Room(
 /// <param name="Colors">A preview: up to four of the colours it sets, as "#rrggbb".</param>
 public record Scene(string Id, string Name, IReadOnlyList<string> Colors);
 
+/// <summary>A scene with the room it belongs to, for picking shortcuts from every room at once.</summary>
+public record RoomScene(string Id, string Name, string Room, IReadOnlyList<string> Colors);
+
 /// <summary>What to change on a room. Leave a value out to keep it.</summary>
 /// <param name="Brightness">1–100 percent.</param>
 /// <param name="Temperature">A white, in kelvin, from <see cref="HueColor.MinKelvin"/> to <see cref="HueColor.MaxKelvin"/>.</param>
@@ -105,14 +108,35 @@ public class HueBridge(IHttpClientFactory httpFactory, IOptionsMonitor<HueOption
                where scene.Group.Rid == roomId
                let name = scene.Metadata.Name.Trim()
                orderby name
-               select new Scene(scene.Id, name, [
-                   .. scene.Actions
-                       .Where(a => a.Action.On?.On != false)
-                       .Select(a => LightColor(a.Action.Color, a.Action.ColorTemperature))
-                       .OfType<string>().Distinct().Take(4),
-               ]),
+               select new Scene(scene.Id, name, Preview(scene)),
         ];
     }
+
+    /// <summary>Every room's scenes, by room and then name. Scenes of zones are left out.</summary>
+    public async Task<IReadOnlyList<RoomScene>> GetAllScenesAsync(CancellationToken cancellationToken)
+    {
+        var roomsTask = GetAsync<HueRoom>("room", cancellationToken);
+        var scenesTask = GetAsync<HueScene>("scene", cancellationToken);
+        var (rooms, scenes) = (await roomsTask, await scenesTask);
+        var roomNames = rooms.ToDictionary(r => r.Id, r => r.Metadata.Name.Trim());
+        return
+        [
+            .. from scene in scenes
+               where roomNames.ContainsKey(scene.Group.Rid)
+               let room = roomNames[scene.Group.Rid]
+               let name = scene.Metadata.Name.Trim()
+               orderby room, name
+               select new RoomScene(scene.Id, name, room, Preview(scene)),
+        ];
+    }
+
+    private static IReadOnlyList<string> Preview(HueScene scene) =>
+    [
+        .. scene.Actions
+            .Where(a => a.Action.On?.On != false)
+            .Select(a => LightColor(a.Action.Color, a.Action.ColorTemperature))
+            .OfType<string>().Distinct().Take(4),
+    ];
 
     /// <param name="id">The room's <see cref="Room.Id"/>.</param>
     /// <returns>False if the bridge has no room with that id.</returns>
@@ -203,7 +227,7 @@ public class HueBridge(IHttpClientFactory httpFactory, IOptionsMonitor<HueOption
         HueColorState? Color,
         [property: JsonPropertyName("color_temperature")] HueColorTemperature? ColorTemperature);
 
-    private record HueRoom(HueMetadata Metadata, IReadOnlyList<HueReference> Children, IReadOnlyList<HueReference> Services);
+    private record HueRoom(string Id, HueMetadata Metadata, IReadOnlyList<HueReference> Children, IReadOnlyList<HueReference> Services);
 
     private record HueGroupedLight(string Id, HueReference Owner, HueOn On, HueDimming? Dimming);
 

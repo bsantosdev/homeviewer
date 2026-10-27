@@ -98,6 +98,7 @@ public sealed class RoomsApiTests : IAsyncLifetime
             await client.PutAsJsonAsync($"/api/rooms/{HueJson.LivingGroupId}", new LightChange(true, null)),
             await client.GetAsync($"/api/rooms/{HueJson.LivingGroupId}/scenes"),
             await client.PostAsync($"/api/scenes/{HueJson.RelaxSceneId}/recall", null),
+            await client.GetAsync("/api/scenes"),
         ];
 
         Assert.All(responses, r => Assert.Equal(HttpStatusCode.ServiceUnavailable, r.StatusCode));
@@ -238,6 +239,21 @@ public sealed class RoomsApiTests : IAsyncLifetime
         // Lights the scene turns off don't count, and each colour shows once.
         Assert.Equal([HueColor.FromXy(0.6915, 0.3083), HueColor.FromXy(0.1532, 0.0475)], scenes[0].Colors);
         Assert.Equal(["#ff942c"], scenes[1].Colors);
+    }
+
+    [Fact]
+    public async Task All_scenes_are_listed_by_room_without_the_zones()
+    {
+        Hue.Serve(HttpMethod.Get, HueJson.RoomsUrl, HueJson.Rooms);
+        Hue.Serve(HttpMethod.Get, HueJson.ScenesUrl, HueJson.Scenes);
+
+        var scenes = await _client.GetFromJsonAsync<RoomScene[]>("/api/scenes");
+
+        Assert.Equal(
+            [("Kitchen", "Read"), ("Living room", "Party"), ("Living room", "Relax")],
+            scenes!.Select(s => (s.Room, s.Name)));
+        Assert.Equal(HueJson.RelaxSceneId, scenes[2].Id);
+        Assert.Equal(["#ff942c"], scenes[2].Colors);
     }
 
     [Fact]

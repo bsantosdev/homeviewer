@@ -1,6 +1,6 @@
 # HomeViewer
 
-Wall-mounted dashboard for an iPad on the home network. A side bar on the left switches between Home, Lights, Timer and Email. Home shows a title and message, a clock and the date, and widgets for the weather, the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
+Wall-mounted dashboard for an iPad on the home network. A bar at the top, next to the title and message, switches between Home, Lights, Shopping list, Timer and Email. Home shows a clock and the date, and widgets for the weather (with a rain alert and the next four days), the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
 
 - `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
 - `client`: Angular 21 app (standalone components, signals), styled with Tailwind CSS v3.
@@ -85,6 +85,12 @@ In `/admin`, under **Background images**, choose **Add images** to pick one or m
 - **Saving:** an upload only stays if you save the settings. Saving also deletes images you removed.
 - **Timing:** which image shows depends only on the time of day, so all screens change together.
 
+## Shopping list
+
+The basket in the top bar opens a shared shopping list. Type something and tap **+** to add it, tap an item to tick it off, and tap **Clear ticked** to remove what you bought. The basket shows how many things are still to buy.
+
+To add things from a phone, open `/list` on it, for example `http://<server>:5070/list`, and add it to the home screen. Every change appears on every open screen straight away, through SignalR. The list is kept in `data/shopping.json`, next to the settings.
+
 ## Night mode
 
 In `/admin`, under **Night mode**, turn on **Dim the dashboard at night** and set the hours, for example from 22:00 until 07:00. During those hours the dashboard shows only a dim clock on black, with no photo, and stops refreshing the weather, calendars and lights.
@@ -94,7 +100,7 @@ In `/admin`, under **Night mode**, turn on **Dim the dashboard at night** and se
 
 ## Philips Hue lights
 
-With a Hue bridge configured, a Lights entry appears in the side bar. It shows your rooms from the Hue app as tiles. Tap a tile to switch the room on or off, and swipe up or down on it to dim it: the tile fills from the bottom to show the brightness, and a swipe across its full height goes from 0 to 100%. Swiping a room that's off turns it on. With a keyboard, the up and down arrows dim a focused tile in steps of 10%.
+With a Hue bridge configured, a Lights entry appears in the top bar. It shows your rooms from the Hue app as tiles. Tap a tile to switch the room on or off, and swipe up or down on it to dim it: the tile fills from the bottom to show the brightness, and a swipe across its full height goes from 0 to 100%. Swiping a room that's off turns it on. With a keyboard, the up and down arrows dim a focused tile in steps of 10%.
 
 While a room is on, its tile takes the colours its lights are showing: a warm white looks amber, and lights in different colours make a gradient. The "•••" in a tile's corner opens the room's sheet:
 
@@ -103,6 +109,8 @@ While a room is on, its tile takes the colours its lights are showing: a warm wh
 - **Colour** swatches, for rooms with colour lights. Lights that only do whites ignore colours.
 
 Close the sheet with ✕, by tapping outside it, or with Escape.
+
+On Home, the lights widget has **All off**, which switches off every room that's on, and buttons for your favourite scenes. Pick those in `/admin`, under **Scene shortcuts**; they appear in the order you tick them.
 
 The server talks to the bridge's local API, so this works without the internet. While you swipe, only the tile changes; the bridge gets one request when you let go, since it accepts about one room command a second. The dashboard refreshes the rooms every 15 seconds to pick up changes made from the Hue app or a wall switch.
 

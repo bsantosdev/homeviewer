@@ -9,7 +9,14 @@ import {
   signal,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
-import { BulbIcon, Home09Icon, Mail01Icon, StopWatchIcon } from '@hugeicons/core-free-icons';
+import {
+  BulbIcon,
+  Home09Icon,
+  Mail01Icon,
+  ShoppingBasket01Icon,
+  StopWatchIcon,
+  UmbrellaIcon,
+} from '@hugeicons/core-free-icons';
 import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
 import { Background } from '../background/background';
 import { CalendarEvent, CalendarService } from '../calendar.service';
@@ -18,6 +25,8 @@ import { Lights } from '../lights/lights';
 import { LightsSummary } from '../lights/lights-summary';
 import { WAKE_MS, isNight } from '../night';
 import { SettingsService } from '../settings.service';
+import { ShoppingService } from '../shopping.service';
+import { ShoppingList } from '../shopping/shopping-list';
 import { Timer } from '../timer/timer';
 import { weatherIconFor } from '../weather-icons';
 import { Weather, WeatherService } from '../weather.service';
@@ -27,8 +36,8 @@ export const EVENTS_REFRESH_MS = 1 * 60 * 1000;
 // Often enough to pick up lights switched from the Hue app or a wall switch.
 export const LIGHTS_REFRESH_MS = 15 * 1000;
 
-/** The pages in the side bar. Home holds the widgets; the others fill the space next to the bar. */
-type Page = 'home' | 'lights' | 'timer' | 'email';
+/** The pages in the top bar. Home holds the widgets; the others fill the space below the bar. */
+type Page = 'home' | 'lights' | 'shopping' | 'timer' | 'email';
 
 interface NavItem {
   page: Page;
@@ -38,17 +47,26 @@ interface NavItem {
 
 const HOME: NavItem = { page: 'home', label: 'Home', icon: Home09Icon };
 const LIGHTS: NavItem = { page: 'lights', label: 'Lights', icon: BulbIcon };
+const SHOPPING: NavItem = { page: 'shopping', label: 'Shopping list', icon: ShoppingBasket01Icon };
 const TIMER: NavItem = { page: 'timer', label: 'Timer', icon: StopWatchIcon };
 const EMAIL: NavItem = { page: 'email', label: 'Email', icon: Mail01Icon };
 
 @Component({
   selector: 'app-dashboard',
-  imports: [Background, DatePipe, HugeiconsIconComponent, Lights, LightsSummary, Timer],
+  imports: [
+    Background,
+    DatePipe,
+    HugeiconsIconComponent,
+    Lights,
+    LightsSummary,
+    ShoppingList,
+    Timer,
+  ],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class:
-      'relative z-0 box-border flex h-screen bg-[#f7f7f5] p-[3vh] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
+      'relative z-0 box-border flex h-screen flex-col bg-[#f7f7f5] p-[3vh] text-[#1a1a1a] transition-colors duration-300 dark:bg-[#111] dark:text-[#f2f2f2]',
     '[class.dark]': 'isDark()',
     // iOS 12 has no pointer events.
     '(touchstart)': 'keepAwake()',
@@ -65,6 +83,9 @@ export class Dashboard {
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;
+  protected readonly umbrellaIcon = UmbrellaIcon;
+  /** Shown on the list's button, so it's clear from home that there's shopping to do. */
+  protected readonly toBuy = inject(ShoppingService).open;
   private readonly chosen = signal<Page>('home');
   /** The lights only show once the server says a Hue bridge is set up. */
   protected readonly hasLights = computed(() => this.lightsService.rooms() !== null);
@@ -73,7 +94,7 @@ export class Dashboard {
     this.chosen() === 'lights' && !this.hasLights() ? 'home' : this.chosen(),
   );
   protected readonly nav = computed(() =>
-    this.hasLights() ? [HOME, LIGHTS, TIMER, EMAIL] : [HOME, TIMER, EMAIL],
+    this.hasLights() ? [HOME, LIGHTS, SHOPPING, TIMER, EMAIL] : [HOME, SHOPPING, TIMER, EMAIL],
   );
   /** When the last tap at night stops keeping the dashboard on. */
   private readonly awakeUntil = signal(0);

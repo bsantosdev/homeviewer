@@ -34,6 +34,9 @@ public record DashboardSettings(
 
     public string NightEnd { get; init; } = "07:00";
 
+    /// <summary>Hue scene ids the dashboard offers as one-tap buttons next to the lights.</summary>
+    public IReadOnlyList<string> SceneShortcuts { get; init; } = [];
+
     [JsonIgnore]
     public bool HasValidNightHours => IsTime(NightStart) && IsTime(NightEnd);
 
