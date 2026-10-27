@@ -6,9 +6,11 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { Text, TextPipe } from '../i18n';
 import { LightsService, Room, RoomScene } from '../lights.service';
 import { SettingsService } from '../settings.service';
-import { DEFAULT_COLOR } from './room-tile';
+import { DEFAULT_COLOR, roomStatus } from './room-tile';
 
 /**
  * The dashboard's lights widget: the scene shortcuts picked in the admin page, a button to turn
@@ -16,6 +18,7 @@ import { DEFAULT_COLOR } from './room-tile';
  */
 @Component({
   selector: 'app-lights-summary',
+  imports: [TextPipe, TranslocoPipe],
   templateUrl: './lights-summary.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block select-none' },
@@ -48,9 +51,8 @@ export class LightsSummary {
     return room.on ? (room.colors[0] ?? DEFAULT_COLOR) : null;
   }
 
-  protected status(room: Room): string {
-    if (!room.on) return 'Off';
-    return room.brightness === null ? 'On' : `${String(room.brightness)}%`;
+  protected status(room: Room): Text {
+    return roomStatus(room.on, room.brightness);
   }
 
   private async loadScenes(): Promise<void> {

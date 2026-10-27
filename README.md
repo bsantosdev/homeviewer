@@ -91,6 +91,12 @@ The basket in the top bar opens a shared shopping list. Type something and tap *
 
 To add things from a phone, open `/list` on it, for example `http://<server>:5070/list`, and add it to the home screen. Every change appears on every open screen straight away, through SignalR. The list is kept in `data/shopping.json`, next to the settings.
 
+## Language
+
+In `/admin`, pick **Language** and save. Every open screen switches straight away, the `/list` page on phones included. The choices are English (the default), Português (Brasil) and Deutsch, and dates follow the language too.
+
+The texts live in `client/src/app/i18n/`, one file per language, and use [Transloco](https://jsverse.gitbook.io/transloco). English (`en.ts`) is the reference: a missing or extra key in another language fails the build, and a test checks that every translation fills in the same `{{ values }}`. To add a language, copy `en.ts`, translate it, and add it to `LANGUAGES` in `client/src/app/i18n.ts` and to `DashboardSettings.Languages` on the server. If Angular has no date data for it yet, register that with `registerLocaleData` in the same file.
+
 ## Night mode
 
 In `/admin`, under **Night mode**, turn on **Dim the dashboard at night** and set the hours, for example from 22:00 until 07:00. During those hours the dashboard shows only a dim clock on black, with no photo, and stops refreshing the weather, calendars and lights.

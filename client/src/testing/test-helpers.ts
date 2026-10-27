@@ -1,6 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { vi } from 'vitest';
+import { Text, provideI18n } from '../app/i18n';
+import { en } from '../app/i18n/en';
 import { DashboardSettings, SETTINGS_HUB, SettingsHub } from '../app/settings.service';
 
 export const TEST_SETTINGS: DashboardSettings = {
@@ -17,6 +19,7 @@ export const TEST_SETTINGS: DashboardSettings = {
   nightStart: '22:00',
   nightEnd: '07:00',
   sceneShortcuts: [],
+  language: 'en',
 };
 
 /** A stand-in for the SignalR connection that lets tests fire hub events. */
@@ -49,12 +52,13 @@ export class FakeHub implements SettingsHub {
   }
 }
 
-/** HttpClient backed by HttpTestingController, plus a fake SignalR hub. */
+/** HttpClient backed by HttpTestingController, a fake SignalR hub, and the app's translations. */
 export function provideTestBackend(hub = new FakeHub()) {
   return [
     provideHttpClient(),
     provideHttpClientTesting(),
     { provide: SETTINGS_HUB, useValue: hub },
+    provideI18n(),
   ];
 }
 
@@ -103,6 +107,15 @@ export function fakeImageLoading(
       else this.onload?.(new Event('load'));
     });
   });
+}
+
+/** A text as it reads in English, for testing code that works out texts without Angular. */
+export function english(text: Text): string {
+  const message = text.key
+    .split('.')
+    .reduce<unknown>((node, part) => (node as Record<string, unknown>)[part], en);
+  if (typeof message !== 'string') throw new Error(`No English text for "${text.key}"`);
+  return message.replace(/{{ (\w+) }}/g, (_, name: string) => String(text.params?.[name]));
 }
 
 /** Lets pending timers and promises run, then lets Angular render. */

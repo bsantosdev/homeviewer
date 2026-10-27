@@ -3,6 +3,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
 import { IMAGE_SHRINKER } from '../backgrounds';
+import { TextError } from '../i18n';
 import { DashboardSettings, SettingsService } from '../settings.service';
 import { Admin, CALENDAR_COLORS } from './admin';
 
@@ -45,7 +46,7 @@ describe('Admin', () => {
   }
 
   async function submit(): Promise<void> {
-    button(el, 'Save').click();
+    query(el, 'button[type=submit]').click();
     await fixture.whenStable();
   }
 
@@ -185,6 +186,59 @@ describe('Admin', () => {
     );
   });
 
+  describe('in the chosen language', () => {
+    async function rejectWith(error: object): Promise<void> {
+      await submit();
+      http
+        .expectOne({ method: 'PUT', url: '/api/settings' })
+        .flush(error, { status: 400, statusText: 'Bad Request' });
+      await settle();
+    }
+
+    it('switches every screen to the language picked, once saved', async () => {
+      await loadSettings();
+      const select = query(el, '[name=language]', HTMLSelectElement);
+      expect(Array.from(select.options, (o) => o.text)).toEqual([
+        'English',
+        'Português (Brasil)',
+        'Deutsch',
+      ]);
+
+      select.value = 'de';
+      select.dispatchEvent(new Event('change'));
+      await submit();
+      const req = http.expectOne({ method: 'PUT', url: '/api/settings' });
+      expect((req.request.body as DashboardSettings).language).toBe('de');
+      req.flush({ ...TEST_SETTINGS, language: 'de' });
+      await settle();
+
+      expect(text(el, 'h1')).toBe('Dashboard-Einstellungen');
+      expect(text(el, 'form span')).toBe('Gespeichert');
+    });
+
+    it('explains a rejection from its code', async () => {
+      http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, language: 'pt-BR' });
+      await fixture.whenStable();
+
+      await rejectWith({
+        code: 'calendarLink',
+        message: 'Calendar "Family" needs an https:// or webcal:// link.',
+        values: { name: 'Family' },
+      });
+
+      expect(text(el, 'form span')).toBe(
+        'Não foi possível salvar: O calendário “Family” precisa de um link https:// ou webcal://.',
+      );
+    });
+
+    it('keeps the server’s own words for a code it doesn’t know', async () => {
+      await loadSettings();
+      await rejectWith({ code: 'somethingNew', message: 'Something new went wrong.' });
+
+      expect(text(el, 'form span')).toBe('Save failed: Something new went wrong.');
+    });
+  });
+
   it('keeps the form when new settings arrive later', async () => {
     await loadSettings();
     await type('[name=title]', 'Kitchen');
@@ -305,10 +359,10 @@ describe('Admin', () => {
       await pick(photo('drawing.gif'), photo('snow.jpg'));
       http
         .expectOne('/api/backgrounds')
-        .flush('Only JPEG and PNG images can be used as backgrounds.', {
-          status: 400,
-          statusText: 'Bad Request',
-        });
+        .flush(
+          { code: 'imageType', message: 'Only JPEG and PNG images can be used as backgrounds.' },
+          { status: 400, statusText: 'Bad Request' },
+        );
       await settle();
 
       expect(text(el, 'form span')).toBe(
@@ -321,11 +375,15 @@ describe('Admin', () => {
     it('reports uploads that fail in the browser or on the server', async () => {
       await loadSettings();
 
-      shrink.mockRejectedValueOnce(new Error('The browser can’t read this image.'));
+      shrink.mockRejectedValueOnce(new TextError({ key: 'errors.imageUnreadable' }));
       await pick(photo('photo.heic'));
       expect(text(el, 'form span')).toBe(
         'Couldn’t add photo.heic: The browser can’t read this image.',
       );
+
+      shrink.mockRejectedValueOnce(new Error('Out of memory'));
+      await pick(photo('huge.jpg'));
+      expect(text(el, 'form span')).toBe('Couldn’t add huge.jpg: Out of memory');
 
       await pick(photo('beach.jpg'));
       http.expectOne('/api/backgrounds').flush('boom', { status: 500, statusText: 'Error' });

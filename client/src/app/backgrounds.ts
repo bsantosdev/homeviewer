@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, InjectionToken, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { TextError } from './i18n';
 
 /** Phone photos are 12 MP or more, which the wall iPad's memory can't hold for long. */
 export const MAX_IMAGE_SIDE = 2048;
@@ -19,7 +20,7 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
       resolve(image);
     };
     image.onerror = () => {
-      reject(new Error('The browser can’t read this image.'));
+      reject(new TextError({ key: 'errors.imageUnreadable' }));
     };
     image.src = url;
   });
@@ -35,13 +36,13 @@ export async function shrinkImage(file: Blob): Promise<Blob> {
     canvas.width = Math.round(image.naturalWidth * scale);
     canvas.height = Math.round(image.naturalHeight * scale);
     const context = canvas.getContext('2d');
-    if (!context) throw new Error('The browser can’t resize images.');
+    if (!context) throw new TextError({ key: 'errors.imageResize' });
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     return await new Promise((resolve, reject) => {
       canvas.toBlob(
         (blob) => {
           if (blob) resolve(blob);
-          else reject(new Error('The browser can’t resize images.'));
+          else reject(new TextError({ key: 'errors.imageResize' }));
         },
         'image/jpeg',
         JPEG_QUALITY,

@@ -1,14 +1,16 @@
 <h2 class="card-title flex items-center justify-between">
-  <span>Lights</span>
+  <span>{{ 'lights.title' | transloco }}</span>
   <span class="flex items-center">
-    <span class="on-count normal-case tracking-normal">{{ onCount() }} on</span>
+    <span class="on-count normal-case tracking-normal">{{
+      'lights.onCount' | transloco: { count: onCount() }
+    }}</span>
     @if (onCount()) {
       <button
         type="button"
         class="all-off ml-[1.5vh] rounded-full bg-neutral-500/20 px-[1.6vh] py-[0.5vh] text-[2vh] font-semibold uppercase tracking-wide [-webkit-tap-highlight-color:transparent]"
         (click)="service.allOff()"
       >
-        All off
+        {{ 'lights.allOff' | transloco }}
       </button>
     }
   </span>
@@ -55,7 +57,9 @@
       ></span>
       <span class="min-w-0 flex-1">
         <span class="name block truncate">{{ room.name }}</span>
-        <span class="status block text-[1.9vh] tabular-nums opacity-60">{{ status(room) }}</span>
+        <span class="status block text-[1.9vh] tabular-nums opacity-60">{{
+          status(room) | text
+        }}</span>
       </span>
       <button
         type="button"
@@ -73,6 +77,6 @@
       </button>
     </div>
   } @empty {
-    <p class="m-0 text-vh-2.5 opacity-50">No rooms with lights found on the Hue bridge.</p>
+    <p class="m-0 text-vh-2.5 opacity-50">{{ 'lights.noRooms' | transloco }}</p>
   }
 </div>

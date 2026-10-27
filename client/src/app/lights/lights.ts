@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { LightsService } from '../lights.service';
 import { RoomSheet } from './room-sheet';
 import { RoomTile } from './room-tile';
@@ -9,7 +10,7 @@ import { RoomTile } from './room-tile';
  */
 @Component({
   selector: 'app-lights',
-  imports: [RoomSheet, RoomTile],
+  imports: [RoomSheet, RoomTile, TranslocoPipe],
   templateUrl: './lights.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'block select-none' },

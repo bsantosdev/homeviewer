@@ -5,19 +5,19 @@
     type="text"
     maxlength="80"
     autocomplete="off"
-    placeholder="Add something to buy"
-    aria-label="Add something to buy"
+    [attr.placeholder]="'shopping.placeholder' | transloco"
+    [attr.aria-label]="'shopping.placeholder' | transloco"
   />
   <button
     type="submit"
     class="add ml-[1.5vh] h-[6vh] w-[6vh] shrink-0 rounded-full bg-[#1a1a1a] p-[1.5vh] text-white [-webkit-tap-highlight-color:transparent] dark:bg-white dark:text-[#1a1a1a]"
-    aria-label="Add"
+    [attr.aria-label]="'shopping.add' | transloco"
   >
     <hugeicons-icon class="block h-full w-full" [icon]="addIcon" [strokeWidth]="2" />
   </button>
 </form>
 @if (error()) {
-  <p class="error m-0 mt-[1vh] text-vh-2.5 text-red-500">{{ error() }}</p>
+  <p class="error m-0 mt-[1vh] text-vh-2.5 text-red-500">{{ error() | transloco }}</p>
 }
 
 <ul
@@ -56,7 +56,9 @@
       </button>
     </li>
   } @empty {
-    <li class="empty py-[1.2vh] text-vh-2.5 opacity-50">Nothing to buy.</li>
+    <li class="empty py-[1.2vh] text-vh-2.5 opacity-50">
+      {{ 'shopping.empty' | transloco }}
+    </li>
   }
 </ul>
 
@@ -66,6 +68,6 @@
     class="clear mt-[1vh] shrink-0 self-start rounded-full bg-neutral-500/20 px-[2vh] py-[1vh] text-[2vh] font-semibold uppercase tracking-wide [-webkit-tap-highlight-color:transparent]"
     (click)="service.clearDone()"
   >
-    Clear ticked
+    {{ 'shopping.clear' | transloco }}
   </button>
 }

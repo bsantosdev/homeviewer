@@ -88,7 +88,10 @@ public sealed class BackgroundsApiTests : IAsyncLifetime
         var response = await UploadAsync(bytes);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-        Assert.Contains("at most 15 MB", await response.Content.ReadAsStringAsync());
+        var error = await response.Content.ReadFromJsonAsync<ApiError>();
+        Assert.Equal("imageSize", error!.Code);
+        Assert.Equal("Images can be at most 15 MB.", error.Message);
+        Assert.Equal("15", error.Values!["megabytes"].ToString());
     }
 
     [Theory]

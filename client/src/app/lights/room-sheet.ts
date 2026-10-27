@@ -1,18 +1,19 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, resource } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { LightsService, MAX_KELVIN, MIN_KELVIN, Room, Scene } from '../lights.service';
 
-/** Colours a room can be set to with one tap, for rooms with colour lights. */
+/** Colours a room can be set to with one tap, for rooms with colour lights, named by translation key. */
 export const SWATCHES = [
-  { name: 'Red', color: '#ff3b30' },
-  { name: 'Orange', color: '#ff9500' },
-  { name: 'Yellow', color: '#ffcc00' },
-  { name: 'Green', color: '#34c759' },
-  { name: 'Teal', color: '#00c7be' },
-  { name: 'Blue', color: '#007aff' },
-  { name: 'Purple', color: '#af52de' },
-  { name: 'Pink', color: '#ff2d55' },
+  { name: 'lights.swatches.red', color: '#ff3b30' },
+  { name: 'lights.swatches.orange', color: '#ff9500' },
+  { name: 'lights.swatches.yellow', color: '#ffcc00' },
+  { name: 'lights.swatches.green', color: '#34c759' },
+  { name: 'lights.swatches.teal', color: '#00c7be' },
+  { name: 'lights.swatches.blue', color: '#007aff' },
+  { name: 'lights.swatches.purple', color: '#af52de' },
+  { name: 'lights.swatches.pink', color: '#ff2d55' },
 ];
 
 /** Where the white slider starts for a room that isn't in white mode: a warm, everyday white. */
@@ -24,7 +25,7 @@ export const DEFAULT_KELVIN = 2700;
  */
 @Component({
   selector: 'app-room-sheet',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, TranslocoPipe],
   templateUrl: './room-sheet.html',
   styleUrl: './room-sheet.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

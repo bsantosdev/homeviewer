@@ -1,5 +1,6 @@
 import { AGENDA_DAYS, agenda, startOfDay, textColorOn } from './agenda';
 import { CalendarEvent } from './calendar.service';
+import { english } from '../testing/test-helpers';
 
 /** An ISO time for a local time on a day in October 2026, so tests pass in any time zone. */
 function at(day: number, hours: number, minutes = 0): string {
@@ -21,7 +22,7 @@ const NOW = new Date(2026, 9, 24, 10, 0);
 function labels(events: CalendarEvent[]): string[] {
   return agenda(events, NOW).map(
     (day) =>
-      `${day.label ?? String(day.date.getDate())}: ${day.items.map((i) => `${i.time} ${i.title}`).join(', ')}`,
+      `${day.label ? english({ key: day.label }) : String(day.date.getDate())}: ${day.items.map((i) => `${english(i.time)} ${i.title}`).join(', ')}`,
   );
 }
 
@@ -40,18 +41,28 @@ describe('agenda', () => {
     expect(days).toEqual([
       {
         date: new Date(2026, 9, 24),
-        label: 'Today',
-        items: [{ title: 'Lunch', time: '12:30', ...badge }],
+        label: 'agenda.today',
+        items: [
+          { title: 'Lunch', time: { key: 'agenda.startsAt', params: { time: '12:30' } }, ...badge },
+        ],
       },
       {
         date: new Date(2026, 9, 25),
-        label: 'Tomorrow',
-        items: [{ title: 'Match', time: '15:00', ...badge }],
+        label: 'agenda.tomorrow',
+        items: [
+          { title: 'Match', time: { key: 'agenda.startsAt', params: { time: '15:00' } }, ...badge },
+        ],
       },
       {
         date: new Date(2026, 9, 28),
         label: null,
-        items: [{ title: 'Dentist', time: '09:00', ...badge }],
+        items: [
+          {
+            title: 'Dentist',
+            time: { key: 'agenda.startsAt', params: { time: '09:00' } },
+            ...badge,
+          },
+        ],
       },
     ]);
   });
@@ -122,7 +133,9 @@ describe('agenda', () => {
   });
 
   it('keeps today when nothing is planned, and only today', () => {
-    expect(agenda([], NOW)).toEqual([{ date: new Date(2026, 9, 24), label: 'Today', items: [] }]);
+    expect(agenda([], NOW)).toEqual([
+      { date: new Date(2026, 9, 24), label: 'agenda.today', items: [] },
+    ]);
   });
 });
 

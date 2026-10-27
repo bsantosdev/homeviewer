@@ -23,32 +23,38 @@
           [class.btn-selected]="duration() === m * 60"
           (click)="setPreset(m)"
         >
-          {{ m }}m
+          {{ 'timer.minutes' | transloco: { count: m } }}
         </button>
       }
     </div>
     <div class="row">
       <button type="button" class="btn btn-primary" [disabled]="!duration()" (click)="start()">
-        Start
+        {{ 'timer.start' | transloco }}
       </button>
     </div>
   }
   @case ('running') {
     <div class="row">
-      <button type="button" class="btn btn-primary" (click)="pause()">Pause</button>
-      <button type="button" class="btn" (click)="reset()">Reset</button>
+      <button type="button" class="btn btn-primary" (click)="pause()">
+        {{ 'timer.pause' | transloco }}
+      </button>
+      <button type="button" class="btn" (click)="reset()">{{ 'timer.reset' | transloco }}</button>
     </div>
   }
   @case ('paused') {
     <div class="row">
-      <button type="button" class="btn btn-primary" (click)="resume()">Resume</button>
-      <button type="button" class="btn" (click)="reset()">Reset</button>
+      <button type="button" class="btn btn-primary" (click)="resume()">
+        {{ 'timer.resume' | transloco }}
+      </button>
+      <button type="button" class="btn" (click)="reset()">{{ 'timer.reset' | transloco }}</button>
     </div>
   }
   @case ('done') {
-    <p class="mt-[1vh] text-vh-4">Time's up!</p>
+    <p class="mt-[1vh] text-vh-4">{{ 'timer.done' | transloco }}</p>
     <div class="row">
-      <button type="button" class="btn btn-primary" (click)="reset()">Dismiss</button>
+      <button type="button" class="btn btn-primary" (click)="reset()">
+        {{ 'timer.dismiss' | transloco }}
+      </button>
     </div>
   }
 }

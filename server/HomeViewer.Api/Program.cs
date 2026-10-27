@@ -46,15 +46,18 @@ app.MapGet("/api/settings", (SettingsStore store) => store.Get());
 app.MapPut("/api/settings", async (DashboardSettings settings, SettingsStore store, BackgroundStore backgrounds, IHubContext<DashboardHub> hub) =>
 {
     if (settings.Calendars.FirstOrDefault(c => !c.HasValidUrl) is { } noLink)
-        return Results.BadRequest($"Calendar \"{noLink.Name}\" needs an https:// or webcal:// link.");
+        return Rejected("calendarLink", $"Calendar \"{noLink.Name}\" needs an https:// or webcal:// link.", ("name", noLink.Name));
     if (settings.Calendars.FirstOrDefault(c => !c.HasValidColor) is { } noColor)
-        return Results.BadRequest($"Calendar \"{noColor.Name}\" needs a colour like #3b82f6.");
+        return Rejected("calendarColour", $"Calendar \"{noColor.Name}\" needs a colour like #3b82f6.", ("name", noColor.Name));
     if (settings.BackgroundMinutes is < 1 or > DashboardSettings.MaxBackgroundMinutes)
-        return Results.BadRequest($"Backgrounds can change every 1 to {DashboardSettings.MaxBackgroundMinutes} minutes.");
+        return Rejected("backgroundMinutes", $"Backgrounds can change every 1 to {DashboardSettings.MaxBackgroundMinutes} minutes.",
+            ("max", DashboardSettings.MaxBackgroundMinutes));
     if (!settings.HasValidNightHours)
-        return Results.BadRequest("Night mode needs a start and end time like 22:00.");
+        return Rejected("nightHours", "Night mode needs a start and end time like 22:00.");
     if (settings.Backgrounds.Any(name => backgrounds.PathOf(name) is null))
-        return Results.BadRequest("A background image is missing. Remove it and add it again.");
+        return Rejected("backgroundMissing", "A background image is missing. Remove it and add it again.");
+    if (!settings.HasValidLanguage)
+        return Rejected("language", $"The language must be one of {string.Join(", ", DashboardSettings.Languages)}.");
 
     store.Save(settings);
     // Uploads that didn't make it into the saved settings, and images just removed, aren't needed any more.
@@ -70,9 +73,9 @@ app.MapPost("/api/backgrounds", async (HttpRequest request, BackgroundStore back
     {
         return Results.Ok(new BackgroundUpload(await backgrounds.SaveAsync(request.Body, cancellationToken)));
     }
-    catch (InvalidDataException ex)
+    catch (InvalidImageException ex)
     {
-        return Results.BadRequest(ex.Message);
+        return Results.BadRequest(ex.Error);
     }
 });
 
@@ -146,6 +149,10 @@ static async Task<IResult> CallHue(HueBridge hue, LightChange? change, Func<Task
         return Results.Problem(ex.Message, statusCode: 502);
     }
 }
+
+// The admin page shows these, so they carry a code it can translate.
+static IResult Rejected(string code, string message, params (string Name, object Value)[] values) =>
+    Results.BadRequest(new ApiError(code, message, values.Length == 0 ? null : values.ToDictionary(v => v.Name, v => v.Value)));
 
 static async Task<IResult> ShoppingUpdated(IHubContext<DashboardHub> hub, IReadOnlyList<ShoppingItem> items)
 {

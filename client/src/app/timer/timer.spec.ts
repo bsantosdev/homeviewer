@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ALARM_SECONDS, Timer } from './timer';
+import { provideI18n } from '../i18n';
 import { button, query, text } from '../../testing/test-helpers';
 
 class FakeAudioContext {
@@ -36,6 +37,7 @@ describe('Timer', () => {
     // Fake only the timer's clocks; Angular's scheduler keeps real timeouts.
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     FakeAudioContext.instances = [];
+    TestBed.configureTestingModule({ providers: [provideI18n()] });
     fixture = TestBed.createComponent(Timer);
     el = fixture.nativeElement as HTMLElement;
     await fixture.whenStable();
@@ -101,7 +103,7 @@ describe('Timer', () => {
     await click('Resume');
     await elapse(40_000);
     expect(display()).toBe('00:00');
-    expect(el.textContent).toContain("Time's up!");
+    expect(el.textContent).toContain('Time’s up!');
     expect(query(el, '.display').classList).toContain('animate-flash');
 
     // Back to the wheels, keeping the last duration.
@@ -117,7 +119,7 @@ describe('Timer', () => {
 
     // The old countdown no longer runs.
     await elapse(10 * 60_000);
-    expect(el.textContent).not.toContain("Time's up!");
+    expect(el.textContent).not.toContain('Time’s up!');
   });
 
   it('resets a paused timer', async () => {

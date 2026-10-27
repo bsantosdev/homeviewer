@@ -13,7 +13,7 @@ const MAINLY_CLEAR: Weather = {
   temperature: 21,
   min: 14,
   max: 24,
-  description: 'Mainly clear',
+  description: 'weather.mainlyClear',
   condition: 'partly-cloudy',
   isDay: true,
   rain: null,
@@ -152,7 +152,7 @@ describe('Dashboard', () => {
   it('says when rain is coming, and forecasts the next days', async () => {
     current.mockResolvedValue({
       ...MAINLY_CLEAR,
-      rain: 'Rain from 16:00',
+      rain: { key: 'weather.rainFrom', params: { time: '16:00' } },
       days: [
         { date: new Date(2026, 9, 24), min: 12, max: 19, condition: 'rain' },
         { date: new Date(2026, 9, 25), min: 11, max: 20, condition: 'unknown' },
@@ -507,6 +507,58 @@ describe('Dashboard', () => {
       ]);
       expect(el.querySelector('.text-clock-half')?.textContent.trim()).toBe('14:05');
       expect(el.querySelector('.text-clock')).toBeNull();
+    });
+
+    it('speaks the language from the settings, dates included', async () => {
+      current.mockResolvedValue({
+        ...MAINLY_CLEAR,
+        rain: { key: 'weather.rainUntil', params: { time: '16:00' } },
+        days: [{ date: new Date(2026, 9, 24), min: 12, max: 19, condition: 'rain' }],
+      });
+      events.mockResolvedValue([
+        {
+          title: 'Market',
+          calendar: 'Family',
+          color: '#ef4444',
+          allDay: true,
+          start: '2026-10-24',
+          end: '2026-10-25',
+        },
+        {
+          title: 'Dentist',
+          calendar: 'Work',
+          color: '#1e3a8a',
+          allDay: false,
+          start: new Date(2026, 9, 28, 9, 30).toISOString(),
+          end: new Date(2026, 9, 28, 10, 0).toISOString(),
+        },
+      ]);
+      const navLabels = () =>
+        Array.from(el.querySelectorAll('nav button'), (b) => b.getAttribute('aria-label'));
+
+      await loadSettings({ ...WITH_CALENDAR, language: 'de' });
+      await settle();
+
+      expect(text(el, '.date')).toBe('Freitag, 23. Oktober');
+      expect(text(el, '.weather-summary')).toBe('Überwiegend klar');
+      expect(text(el, '.weather-rain')).toBe('Regen bis 16:00');
+      expect(text(el, '.weather-day div')).toBe('Sa.');
+      expect(sections()).toEqual([
+        'Heute Nichts geplant',
+        'Morgen Family Ganztägig Market',
+        'Mittwoch, 28. Oktober Work 09:30 Dentist',
+      ]);
+      expect(navLabels()).toEqual(['Start', 'Einkaufsliste', 'Timer', 'E-Mail']);
+      expect(document.documentElement.lang).toBe('de');
+
+      TestBed.inject(SettingsService).settings.set({ ...WITH_CALENDAR, language: 'pt-BR' });
+      await fixture.whenStable();
+
+      // Lowercase in the text; CSS capitalises the first letter on screen.
+      expect(text(el, '.date')).toBe('sexta-feira, 23 de outubro');
+      expect(text(el, '.weather-rain')).toBe('Chuva até 16:00');
+      expect(sections()[1]).toBe('Amanhã Family Dia todo Market');
+      expect(navLabels()).toEqual(['Início', 'Lista de compras', 'Timer', 'E-mail']);
     });
 
     it("badges each event with its calendar's name and colour", async () => {

@@ -3,11 +3,11 @@
   <button
     type="button"
     class="night absolute bottom-0 left-0 right-0 top-0 z-10 flex w-full items-center justify-center bg-black text-[#4a4a4a] [-webkit-tap-highlight-color:transparent]"
-    aria-label="Wake the dashboard"
+    [attr.aria-label]="'dashboard.wake' | transloco"
     (click)="wake()"
   >
     <span class="night-clock text-[12vh] font-extralight tabular-nums">{{
-      now() | date: 'HH:mm'
+      now() | date: 'HH:mm' : undefined : language()
     }}</span>
   </button>
 } @else if (settings(); as s) {
@@ -29,7 +29,7 @@
               ? 'bg-[#1a1a1a] text-white shadow dark:bg-white dark:text-[#1a1a1a]'
               : 'opacity-80'
           "
-          [attr.aria-label]="item.label"
+          [attr.aria-label]="item.label | transloco"
           [attr.aria-current]="page() === item.page ? 'page' : null"
           (click)="show(item.page)"
         >
@@ -50,13 +50,13 @@
     @switch (page()) {
       @case ('lights') {
         <section class="card flex min-h-0 flex-1 flex-col">
-          <h2 class="card-title">Lights</h2>
+          <h2 class="card-title">{{ 'lights.title' | transloco }}</h2>
           <app-lights class="min-h-0 flex-1" />
         </section>
       }
       @case ('shopping') {
         <section class="card flex min-h-0 flex-1 flex-col">
-          <h2 class="card-title">Shopping list</h2>
+          <h2 class="card-title">{{ 'shopping.title' | transloco }}</h2>
           <app-shopping-list class="flex-1" />
         </section>
       }
@@ -67,7 +67,7 @@
       }
       @case ('email') {
         <section class="card flex flex-1 flex-col items-center justify-center text-center">
-          <p class="email m-0 text-vh-3 opacity-60">Email is coming soon.</p>
+          <p class="email m-0 text-vh-3 opacity-60">{{ 'dashboard.emailSoon' | transloco }}</p>
         </section>
       }
       @default {
@@ -84,9 +84,12 @@
                 [class.text-clock]="!hasWidgets()"
                 [class.text-clock-half]="hasWidgets()"
               >
-                {{ now() | date: 'HH:mm' }}
+                {{ now() | date: 'HH:mm' : undefined : language() }}
               </div>
-              <div class="date text-vh-3.5 opacity-80">{{ now() | date: 'EEEE, d MMMM' }}</div>
+              <!-- Weekdays are lowercase in Portuguese, but this starts a line. -->
+              <div class="date text-vh-3.5 opacity-80 first-letter:uppercase">
+                {{ now() | date: ('dates.long' | transloco) : undefined : language() }}
+              </div>
             </div>
 
             @if (weather(); as w) {
@@ -108,9 +111,13 @@
                     >{{ w.temperature }}°</span
                   >
                   <span class="min-w-0 text-vh-2.5">
-                    <span class="weather-summary block truncate">{{ w.description }}</span>
+                    <span class="weather-summary block truncate">{{
+                      w.description ? (w.description | transloco) : ''
+                    }}</span>
                     <span class="block truncate opacity-70">
-                      <span class="weather-range" aria-label="Today's low and high"
+                      <span
+                        class="weather-range"
+                        [attr.aria-label]="'dashboard.todaysRange' | transloco"
                         >↓{{ w.min }}° ↑{{ w.max }}°</span
                       >
                       · <span class="weather-place">{{ s.locationName }}</span>
@@ -124,7 +131,7 @@
                       [icon]="umbrellaIcon"
                       [strokeWidth]="2"
                     />
-                    {{ w.rain }}
+                    {{ w.rain | text }}
                   </p>
                 }
                 @if (w.days.length) {
@@ -133,7 +140,11 @@
                   >
                     @for (day of w.days; track day.date.getTime()) {
                       <div class="weather-day min-w-0 flex-1 text-center text-vh-2.5">
-                        <div class="opacity-70">{{ day.date | date: 'EEE' }}</div>
+                        <div class="opacity-70 first-letter:uppercase">
+                          {{
+                            day.date | date: ('dates.weekday' | transloco) : undefined : language()
+                          }}
+                        </div>
                         @if (weatherIconFor(day.condition, true); as icon) {
                           <hugeicons-icon
                             class="mx-auto my-[1vh] block h-[5vh] w-[5vh]"
@@ -161,14 +172,21 @@
             <div class="flex w-[54%] min-w-0 flex-col">
               @if (hasCalendars()) {
                 <section class="card flex min-h-0 flex-1 flex-col">
-                  <h2 class="card-title">Agenda</h2>
+                  <h2 class="card-title">{{ 'dashboard.agenda' | transloco }}</h2>
                   <div
                     class="agenda min-h-0 flex-1 overflow-y-auto text-vh-2.5 [-webkit-overflow-scrolling:touch]"
                   >
                     @for (day of agenda(); track day.date.getTime()) {
                       <section class="mb-[2vh] last:mb-0">
-                        <h3 class="m-0 mb-[0.6vh] text-[2.2vh] font-semibold opacity-60">
-                          {{ day.label ?? (day.date | date: 'EEEE, d MMMM') }}
+                        <h3
+                          class="m-0 mb-[0.6vh] text-[2.2vh] font-semibold opacity-60 first-letter:uppercase"
+                        >
+                          {{
+                            day.label
+                              ? (day.label | transloco)
+                              : (day.date
+                                | date: ('dates.long' | transloco) : undefined : language())
+                          }}
                         </h3>
                         @for (item of day.items; track $index) {
                           <div class="flex items-center py-[0.4vh] leading-snug">
@@ -181,12 +199,12 @@
                               >
                             </span>
                             <span class="time w-[11vh] shrink-0 tabular-nums opacity-70">{{
-                              item.time
+                              item.time | text
                             }}</span>
                             <span class="title min-w-0 flex-1 truncate">{{ item.title }}</span>
                           </div>
                         } @empty {
-                          <p class="m-0 opacity-50">Nothing planned</p>
+                          <p class="m-0 opacity-50">{{ 'dashboard.nothingPlanned' | transloco }}</p>
                         }
                       </section>
                     }

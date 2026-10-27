@@ -9,6 +9,8 @@ import {
   signal,
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { TextPipe } from '../i18n';
 import {
   BulbIcon,
   Home09Icon,
@@ -41,15 +43,16 @@ type Page = 'home' | 'lights' | 'shopping' | 'timer' | 'email';
 
 interface NavItem {
   page: Page;
+  /** A translation key. */
   label: string;
   icon: typeof Home09Icon;
 }
 
-const HOME: NavItem = { page: 'home', label: 'Home', icon: Home09Icon };
-const LIGHTS: NavItem = { page: 'lights', label: 'Lights', icon: BulbIcon };
-const SHOPPING: NavItem = { page: 'shopping', label: 'Shopping list', icon: ShoppingBasket01Icon };
-const TIMER: NavItem = { page: 'timer', label: 'Timer', icon: StopWatchIcon };
-const EMAIL: NavItem = { page: 'email', label: 'Email', icon: Mail01Icon };
+const HOME: NavItem = { page: 'home', label: 'nav.home', icon: Home09Icon };
+const LIGHTS: NavItem = { page: 'lights', label: 'nav.lights', icon: BulbIcon };
+const SHOPPING: NavItem = { page: 'shopping', label: 'nav.shopping', icon: ShoppingBasket01Icon };
+const TIMER: NavItem = { page: 'timer', label: 'nav.timer', icon: StopWatchIcon };
+const EMAIL: NavItem = { page: 'email', label: 'nav.email', icon: Mail01Icon };
 
 @Component({
   selector: 'app-dashboard',
@@ -60,7 +63,9 @@ const EMAIL: NavItem = { page: 'email', label: 'Email', icon: Mail01Icon };
     Lights,
     LightsSummary,
     ShoppingList,
+    TextPipe,
     Timer,
+    TranslocoPipe,
   ],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -80,6 +85,7 @@ export class Dashboard {
   private readonly lightsService = inject(LightsService);
   protected readonly settings = this.settingsService.settings;
   protected readonly isDark = this.settingsService.isDark;
+  protected readonly language = this.settingsService.language;
   protected readonly now = signal(new Date());
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;

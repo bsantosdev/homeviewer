@@ -2,7 +2,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { BackgroundsService, backgroundUrl } from '../backgrounds';
+import { LANGUAGES, LANGUAGE_NAMES, Text, TextError, TextPipe, isApiError } from '../i18n';
+import { en } from '../i18n/en';
 import { LightsService, RoomScene } from '../lights.service';
 import { DashboardSettings, SettingsService } from '../settings.service';
 
@@ -11,7 +14,7 @@ export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, TextPipe, TranslocoPipe],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -26,8 +29,10 @@ export class Admin {
   private readonly backgrounds = inject(BackgroundsService);
   protected readonly backgroundUrl = backgroundUrl;
   protected readonly isDark = this.service.isDark;
+  protected readonly languages = LANGUAGES;
+  protected readonly languageNames = LANGUAGE_NAMES;
   protected readonly form = signal<DashboardSettings | null>(null);
-  protected readonly status = signal('');
+  protected readonly status = signal<Text | null>(null);
   /** Every room's Hue scenes to pick shortcuts from; empty while there's no bridge. */
   protected readonly scenes = signal<RoomScene[]>([]);
 
@@ -76,16 +81,17 @@ export class Admin {
     // Clear the picker, so picking the same file again still counts as a change.
     input.value = '';
     for (let i = 0; i < files.length; i++) {
-      this.status.set(`Uploading image ${String(i + 1)} of ${String(files.length)}…`);
+      this.status.set({ key: 'admin.uploading', params: { number: i + 1, total: files.length } });
       try {
         const name = await this.backgrounds.upload(files[i]);
         this.form.update((f) => f && { ...f, backgrounds: [...f.backgrounds, name] });
       } catch (err: unknown) {
-        this.status.set(`Couldn’t add ${files[i].name}: ${reasonFor(err) || 'upload failed'}`);
+        const reason = reasonFor(err) ?? { key: 'admin.uploadFailedReason' };
+        this.status.set({ key: 'admin.uploadFailed', params: { name: files[i].name, reason } });
         return;
       }
     }
-    if (files.length) this.status.set('Save to keep the new images');
+    if (files.length) this.status.set({ key: 'admin.saveToKeep' });
   }
 
   protected removeBackground(form: DashboardSettings, name: string): void {
@@ -101,20 +107,34 @@ export class Admin {
   }
 
   protected async save(form: DashboardSettings): Promise<void> {
-    this.status.set('Saving…');
+    this.status.set({ key: 'admin.saving' });
     try {
       await this.service.save(form);
-      this.status.set('Saved');
+      this.status.set({ key: 'admin.saved' });
     } catch (err: unknown) {
       const reason = reasonFor(err);
-      this.status.set(reason ? `Save failed: ${reason}` : 'Save failed');
+      this.status.set(
+        reason
+          ? { key: 'admin.saveFailedReason', params: { reason } }
+          : { key: 'admin.saveFailed' },
+      );
     }
   }
 }
 
-/** The server explains rejected requests, e.g. a calendar without a web link; local errors carry a message. */
-function reasonFor(err: unknown): string {
-  if (err instanceof HttpErrorResponse)
-    return err.status === 400 && typeof err.error === 'string' ? err.error : '';
-  return err instanceof Error ? err.message : '';
+/**
+ * The server explains rejected requests with a code, e.g. for a calendar without a web link; the
+ * browser's own failures carry a text. Codes this build doesn't know keep the server's own words.
+ */
+function reasonFor(err: unknown): Text | string | null {
+  if (err instanceof HttpErrorResponse) {
+    if (err.status !== 400) return null;
+    if (isApiError(err.error))
+      return err.error.code in en.errors
+        ? { key: `errors.${err.error.code}`, params: err.error.values }
+        : err.error.message;
+    return typeof err.error === 'string' ? err.error : null;
+  }
+  if (err instanceof TextError) return err.text;
+  return err instanceof Error ? err.message : null;
 }
