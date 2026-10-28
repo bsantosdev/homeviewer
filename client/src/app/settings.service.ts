@@ -1,8 +1,10 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Injectable, InjectionToken, computed, inject, signal } from '@angular/core';
+import { Injectable, InjectionToken, computed, effect, inject, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
 import { firstValueFrom } from 'rxjs';
+import { DEFAULT_LANGUAGE, Language, isLanguage } from './i18n';
 
 export interface DashboardSettings {
   title: string;
@@ -23,6 +25,8 @@ export interface DashboardSettings {
   nightEnd: string;
   /** Hue scene ids offered as one-tap buttons next to the lights. */
   sceneShortcuts: string[];
+  /** What every screen shows its texts and dates in. */
+  language: Language;
 }
 
 /** A published Outlook (ICS) calendar. The server downloads it; the link stays private to the home network. */
@@ -80,6 +84,11 @@ export class SettingsService {
   readonly settings = signal<DashboardSettings | null>(null);
   /** Dark until the settings say otherwise, so the first paint doesn't flash white. */
   readonly isDark = computed(() => (this.settings()?.theme ?? 'dark') === 'dark');
+  /** English until the settings say otherwise; also the locale for dates. */
+  readonly language = computed(() => {
+    const language = this.settings()?.language;
+    return isLanguage(language) ? language : DEFAULT_LANGUAGE;
+  });
   /** False once the server has been out of reach for a while, e.g. while it's stopped for maintenance. */
   readonly online = signal(true);
   /** Goes up each time the connection comes back after dropping, so other data can catch up too. */
@@ -89,6 +98,11 @@ export class SettingsService {
   private offlineTimer?: ReturnType<typeof setTimeout>;
 
   constructor() {
+    const transloco = inject(TranslocoService);
+    effect(() => {
+      transloco.setActiveLang(this.language());
+      this.document.documentElement.lang = this.language();
+    });
     this.load();
 
     const hub = inject(SETTINGS_HUB);

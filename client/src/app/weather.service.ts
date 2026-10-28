@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import { Text } from './i18n';
 
 export type WeatherCondition =
   | 'clear'
@@ -19,11 +20,12 @@ export interface Weather {
   /** Today's low and high, in the location's time zone. */
   min: number;
   max: number;
+  /** A translation key, or empty for a code Open-Meteo hasn't documented. */
   description: string;
   condition: WeatherCondition;
   isDay: boolean;
   /** When rain starts or stops in the next hours, e.g. "Rain from 15:00", or null if it stays dry. */
-  rain: string | null;
+  rain: Text | null;
   /** The next days, after today. */
   days: DayForecast[];
 }
@@ -60,36 +62,36 @@ export const FORECAST_DAYS = 4;
 /** How far ahead to look for rain. */
 export const RAIN_HOURS = 12;
 
-// WMO weather codes used by Open-Meteo.
+// WMO weather codes used by Open-Meteo, with the translation key of each.
 const WEATHER_CODES: Record<number, [string, WeatherCondition] | undefined> = {
-  0: ['Clear sky', 'clear'],
-  1: ['Mainly clear', 'partly-cloudy'],
-  2: ['Partly cloudy', 'partly-cloudy'],
-  3: ['Overcast', 'cloudy'],
-  45: ['Fog', 'fog'],
-  48: ['Rime fog', 'fog'],
-  51: ['Light drizzle', 'drizzle'],
-  53: ['Drizzle', 'drizzle'],
-  55: ['Heavy drizzle', 'drizzle'],
-  56: ['Freezing drizzle', 'drizzle'],
-  57: ['Freezing drizzle', 'drizzle'],
-  61: ['Light rain', 'rain'],
-  63: ['Rain', 'rain'],
-  65: ['Heavy rain', 'rain'],
-  66: ['Freezing rain', 'rain'],
-  67: ['Freezing rain', 'rain'],
-  71: ['Light snow', 'snow'],
-  73: ['Snow', 'snow'],
-  75: ['Heavy snow', 'snow'],
-  77: ['Snow grains', 'snow'],
-  80: ['Rain showers', 'showers'],
-  81: ['Rain showers', 'showers'],
-  82: ['Violent showers', 'showers'],
-  85: ['Snow showers', 'snow'],
-  86: ['Heavy snow showers', 'snow'],
-  95: ['Thunderstorm', 'thunderstorm'],
-  96: ['Thunderstorm, hail', 'thunderstorm'],
-  99: ['Thunderstorm, hail', 'thunderstorm'],
+  0: ['weather.clearSky', 'clear'],
+  1: ['weather.mainlyClear', 'partly-cloudy'],
+  2: ['weather.partlyCloudy', 'partly-cloudy'],
+  3: ['weather.overcast', 'cloudy'],
+  45: ['weather.fog', 'fog'],
+  48: ['weather.rimeFog', 'fog'],
+  51: ['weather.lightDrizzle', 'drizzle'],
+  53: ['weather.drizzle', 'drizzle'],
+  55: ['weather.heavyDrizzle', 'drizzle'],
+  56: ['weather.freezingDrizzle', 'drizzle'],
+  57: ['weather.freezingDrizzle', 'drizzle'],
+  61: ['weather.lightRain', 'rain'],
+  63: ['weather.rain', 'rain'],
+  65: ['weather.heavyRain', 'rain'],
+  66: ['weather.freezingRain', 'rain'],
+  67: ['weather.freezingRain', 'rain'],
+  71: ['weather.lightSnow', 'snow'],
+  73: ['weather.snow', 'snow'],
+  75: ['weather.heavySnow', 'snow'],
+  77: ['weather.snowGrains', 'snow'],
+  80: ['weather.rainShowers', 'showers'],
+  81: ['weather.rainShowers', 'showers'],
+  82: ['weather.violentShowers', 'showers'],
+  85: ['weather.snowShowers', 'snow'],
+  86: ['weather.heavySnowShowers', 'snow'],
+  95: ['weather.thunderstorm', 'thunderstorm'],
+  96: ['weather.thunderstormHail', 'thunderstorm'],
+  99: ['weather.thunderstormHail', 'thunderstorm'],
 };
 
 export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -148,11 +150,14 @@ function isWet(probability: number | null, millimetres: number | null): boolean 
 }
 
 /** Says when the weather turns, from hours that start with the current one. */
-export function rainNote(hours: { time: string; wet: boolean }[]): string | null {
+export function rainNote(hours: { time: string; wet: boolean }[]): Text | null {
   if (!hours.length) return null;
   const turn = hours.find((hour) => hour.wet !== hours[0].wet);
-  if (hours[0].wet) return turn ? `Rain until ${turn.time}` : 'Rain for the next hours';
-  return turn ? `Rain from ${turn.time}` : null;
+  if (hours[0].wet)
+    return turn
+      ? { key: 'weather.rainUntil', params: { time: turn.time } }
+      : { key: 'weather.rainAhead' };
+  return turn ? { key: 'weather.rainFrom', params: { time: turn.time } } : null;
 }
 
 /** "2026-10-23" as local midnight; `new Date("2026-10-23")` would be UTC midnight. */

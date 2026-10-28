@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Loading03Icon, Wrench01Icon } from '@hugeicons/core-free-icons';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { SettingsService } from '../settings.service';
 
 /**
@@ -9,7 +10,7 @@ import { SettingsService } from '../settings.service';
  */
 @Component({
   selector: 'app-maintenance',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, TranslocoPipe],
   templateUrl: './maintenance.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

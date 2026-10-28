@@ -5,7 +5,7 @@
   class="tile relative block h-full w-full overflow-hidden rounded-[2.5vh] text-left [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none]"
   [class]="on() ? 'text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.6)]' : 'bg-neutral-500/15'"
   [attr.aria-pressed]="on()"
-  [attr.aria-label]="name() + ', ' + status()"
+  [attr.aria-label]="name() + ', ' + (status() | text)"
   (click)="tap()"
   (keydown.arrowup)="step(keyStep, $event)"
   (keydown.arrowdown)="step(-keyStep, $event)"
@@ -33,7 +33,7 @@
     <span>
       <span class="name block font-semibold leading-tight">{{ name() }}</span>
       <span class="status mt-[0.5vh] block text-vh-2.5 tabular-nums opacity-80">{{
-        status()
+        status() | text
       }}</span>
     </span>
   </span>
@@ -43,7 +43,7 @@
   type="button"
   class="more absolute right-[1vh] top-[1vh] h-[6vh] w-[6vh] p-[1.3vh] opacity-80 [-webkit-tap-highlight-color:transparent]"
   [class]="on() ? 'text-white' : ''"
-  [attr.aria-label]="name() + ' colours and scenes'"
+  [attr.aria-label]="'lights.more' | transloco: { name: name() }"
   (click)="opened.emit()"
 >
   <hugeicons-icon class="block h-full w-full" [icon]="moreIcon" [strokeWidth]="2" />

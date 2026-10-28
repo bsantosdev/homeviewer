@@ -1,6 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
+import { TranslocoService } from '@jsverse/transloco';
 import { HubConnection, HubConnectionState } from '@microsoft/signalr';
 import {
   OFFLINE_GRACE_MS,
@@ -63,6 +64,25 @@ describe('SettingsService', () => {
 
     http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, theme: 'light' });
     expect(service.isDark()).toBe(false);
+  });
+
+  it('switches the texts and the page language to the language in the settings', () => {
+    const service = create();
+    const transloco = TestBed.inject(TranslocoService);
+    TestBed.tick();
+    expect(service.language()).toBe('en');
+    expect(document.documentElement.lang).toBe('en');
+
+    http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, language: 'de' });
+    TestBed.tick();
+    expect(transloco.getActiveLang()).toBe('de');
+    expect(document.documentElement.lang).toBe('de');
+
+    // A language this build has no texts for, e.g. from a newer server.
+    hub.emit('SettingsUpdated', { ...TEST_SETTINGS, language: 'fr' });
+    TestBed.tick();
+    expect(service.language()).toBe('en');
+    expect(transloco.getActiveLang()).toBe('en');
   });
 
   it('applies settings pushed through the hub', () => {

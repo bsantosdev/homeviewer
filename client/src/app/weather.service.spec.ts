@@ -5,7 +5,7 @@ import { OPEN_METEO_URL, WeatherService, rainNote } from './weather.service';
 type Hourly = Record<'precipitation_probability' | 'precipitation', (number | null)[]> & {
   time: string[];
 };
-import { provideTestBackend } from '../testing/test-helpers';
+import { english, provideTestBackend } from '../testing/test-helpers';
 
 describe('WeatherService', () => {
   let service: WeatherService;
@@ -58,7 +58,7 @@ describe('WeatherService', () => {
       temperature: 14,
       min: 9,
       max: 19,
-      description: 'Overcast',
+      description: 'weather.overcast',
       condition: 'cloudy',
       isDay: true,
       rain: null,
@@ -81,7 +81,7 @@ describe('WeatherService', () => {
       precipitation_probability: [null, 30, 70],
       precipitation: [null, 0.6, 0],
     });
-    expect((await weather).rain).toBe('Rain from 15:00');
+    expect((await weather).rain).toEqual({ key: 'weather.rainFrom', params: { time: '15:00' } });
   });
 
   it('reports night time', async () => {
@@ -112,19 +112,23 @@ describe('WeatherService', () => {
 
 describe('rainNote', () => {
   const at = (time: string, wet: boolean) => ({ time, wet });
+  const note = (hours: { time: string; wet: boolean }[]) => {
+    const text = rainNote(hours);
+    return text && english(text);
+  };
 
   it('says when rain starts', () => {
-    expect(rainNote([at('14:00', false), at('15:00', true)])).toBe('Rain from 15:00');
+    expect(note([at('14:00', false), at('15:00', true)])).toBe('Rain from 15:00');
   });
 
   it('says when rain stops', () => {
-    expect(rainNote([at('14:00', true), at('15:00', true), at('16:00', false)])).toBe(
+    expect(note([at('14:00', true), at('15:00', true), at('16:00', false)])).toBe(
       'Rain until 16:00',
     );
   });
 
   it('says when rain keeps on', () => {
-    expect(rainNote([at('14:00', true), at('15:00', true)])).toBe('Rain for the next hours');
+    expect(note([at('14:00', true), at('15:00', true)])).toBe('Rain for the next hours');
   });
 
   it('says nothing when it stays dry, or without hours', () => {

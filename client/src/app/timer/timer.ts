@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { WheelPicker } from '../wheel-picker/wheel-picker';
 
 type TimerState = 'setup' | 'running' | 'paused' | 'done';
@@ -32,7 +33,7 @@ function audioContextClass(): typeof AudioContext | undefined {
 
 @Component({
   selector: 'app-timer',
-  imports: [WheelPicker],
+  imports: [TranslocoPipe, WheelPicker],
   templateUrl: './timer.html',
   styleUrl: './timer.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

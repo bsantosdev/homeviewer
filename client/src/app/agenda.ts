@@ -1,14 +1,15 @@
 import { CalendarEvent } from './calendar.service';
+import { Text } from './i18n';
 
 /** How many days the agenda covers, today included. */
 export const AGENDA_DAYS = 7;
 
-const DAY_LABELS = ['Today', 'Tomorrow'];
+const DAY_LABELS = ['agenda.today', 'agenda.tomorrow'];
 
 export interface AgendaItem {
   title: string;
   /** "All day", "09:30", or "to 11:00" for something that started on an earlier day. */
-  time: string;
+  time: Text;
   calendar: string;
   color: string;
   /** Black or white, whichever reads better on `color`. */
@@ -18,7 +19,7 @@ export interface AgendaItem {
 export interface AgendaDay {
   /** Local midnight. */
   date: Date;
-  /** "Today" or "Tomorrow"; later days are shown by their date. */
+  /** The translation key for "Today" or "Tomorrow"; later days are shown by their date. */
   label: string | null;
   items: AgendaItem[];
 }
@@ -71,9 +72,11 @@ export function textColorOn(color: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? '#000' : '#fff';
 }
 
-function timeLabel(allDay: boolean, start: Date, end: Date, dayStart: Date, dayEnd: Date): string {
-  if (allDay || (start < dayStart && end > dayEnd)) return 'All day';
-  return start < dayStart ? `to ${hhmm(end)}` : hhmm(start);
+function timeLabel(allDay: boolean, start: Date, end: Date, dayStart: Date, dayEnd: Date): Text {
+  if (allDay || (start < dayStart && end > dayEnd)) return { key: 'agenda.allDay' };
+  return start < dayStart
+    ? { key: 'agenda.until', params: { time: hhmm(end) } }
+    : { key: 'agenda.startsAt', params: { time: hhmm(start) } };
 }
 
 function hhmm(date: Date): string {

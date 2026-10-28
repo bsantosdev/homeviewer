@@ -144,6 +144,45 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Rejections_carry_a_code_and_values_for_the_client_to_translate()
+    {
+        var updated = DashboardSettings.Default with { Calendars = [new("Family", "ftp://example.com/calendar.ics")] };
+
+        var response = await _client.PutAsJsonAsync("/api/settings", updated);
+
+        var error = await response.Content.ReadFromJsonAsync<ApiError>();
+        Assert.Equal("calendarLink", error!.Code);
+        Assert.Equal("Calendar \"Family\" needs an https:// or webcal:// link.", error.Message);
+        Assert.Equal("Family", error.Values!["name"].ToString());
+    }
+
+    [Fact]
+    public async Task Settings_are_in_english_until_another_language_is_saved()
+    {
+        Assert.Equal("en", (await _client.GetFromJsonAsync<DashboardSettings>("/api/settings"))!.Language);
+
+        (await _client.PutAsJsonAsync("/api/settings", DashboardSettings.Default with { Language = "pt-BR" }))
+            .EnsureSuccessStatusCode();
+
+        Assert.Equal("pt-BR", (await _client.GetFromJsonAsync<DashboardSettings>("/api/settings"))!.Language);
+    }
+
+    [Theory]
+    [InlineData("fr")]
+    [InlineData("pt")]
+    [InlineData("")]
+    public async Task Put_rejects_languages_the_dashboard_has_no_texts_for(string language)
+    {
+        var response = await _client.PutAsJsonAsync("/api/settings", DashboardSettings.Default with { Language = language });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var error = await response.Content.ReadFromJsonAsync<ApiError>();
+        Assert.Equal("language", error!.Code);
+        Assert.Null(error.Values);
+        Assert.Equal("en", (await _client.GetFromJsonAsync<DashboardSettings>("/api/settings"))!.Language);
+    }
+
+    [Fact]
     public async Task Events_are_read_from_the_configured_calendars()
     {
         _factory.Calendars.Serve("https://outlook.example/a.ics", Ics.Outlook);

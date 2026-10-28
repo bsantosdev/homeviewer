@@ -30,7 +30,7 @@ describe('loadImage', () => {
 
   it('rejects an image the browser can’t read', async () => {
     fakeImageLoading({ fails: () => true });
-    await expect(loadImage('/a.heic')).rejects.toThrow('The browser can’t read this image.');
+    await expect(loadImage('/a.heic')).rejects.toThrow('errors.imageUnreadable');
   });
 });
 
@@ -75,7 +75,7 @@ describe('shrinkImage', () => {
   it('fails without a canvas to draw on', async () => {
     fakeImageLoading();
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
-    await expect(shrinkImage(file)).rejects.toThrow('The browser can’t resize images.');
+    await expect(shrinkImage(file)).rejects.toThrow('errors.imageResize');
     expect(revoke).toHaveBeenCalled();
   });
 
@@ -84,7 +84,7 @@ describe('shrinkImage', () => {
     toBlob.mockImplementation((callback: BlobCallback) => {
       callback(null);
     });
-    await expect(shrinkImage(file)).rejects.toThrow('The browser can’t resize images.');
+    await expect(shrinkImage(file)).rejects.toThrow('errors.imageResize');
   });
 });
 

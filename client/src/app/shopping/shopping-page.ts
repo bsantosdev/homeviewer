@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { SettingsService } from '../settings.service';
 import { ShoppingList } from './shopping-list';
 
 /** The shopping list on its own, at /list, for adding things from a phone. */
 @Component({
   selector: 'app-shopping-page',
-  imports: [ShoppingList],
+  imports: [ShoppingList, TranslocoPipe],
   template: `
-    <h1 class="m-0 mb-[2vh] text-vh-4 font-semibold">Shopping list</h1>
+    <h1 class="m-0 mb-[2vh] text-vh-4 font-semibold">{{ 'shopping.title' | transloco }}</h1>
     <app-shopping-list class="flex-1" />
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

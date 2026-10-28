@@ -16,7 +16,7 @@
       (opened)="openId.set(room.id)"
     />
   } @empty {
-    <p class="text-center opacity-50">No rooms with lights found on the Hue bridge.</p>
+    <p class="text-center opacity-50">{{ 'lights.noRooms' | transloco }}</p>
   }
 </div>
 @if (openRoom(); as room) {

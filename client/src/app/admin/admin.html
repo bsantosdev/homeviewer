@@ -1,34 +1,42 @@
 <div class="mx-auto max-w-[480px] px-4 py-6 text-base">
-  <h1 class="mb-4 text-2xl font-semibold">Dashboard settings</h1>
+  <h1 class="mb-4 text-2xl font-semibold">{{ 'admin.title' | transloco }}</h1>
 
   @if (form(); as f) {
     <form class="flex flex-col" (ngSubmit)="save(f)">
       <label class="mb-3.5 flex flex-col">
-        Title
+        {{ 'admin.pageTitle' | transloco }}
         <input class="field" name="title" [(ngModel)]="f.title" />
       </label>
       <label class="mb-3.5 flex flex-col">
-        Message
+        {{ 'admin.message' | transloco }}
         <textarea class="field" name="message" rows="3" [(ngModel)]="f.message"></textarea>
       </label>
       <label class="mb-3.5 flex flex-col">
-        Theme
+        {{ 'admin.theme' | transloco }}
         <select class="field" name="theme" [(ngModel)]="f.theme">
-          <option value="dark">Dark</option>
-          <option value="light">Light</option>
+          <option value="dark">{{ 'admin.dark' | transloco }}</option>
+          <option value="light">{{ 'admin.light' | transloco }}</option>
         </select>
       </label>
       <label class="mb-3.5 flex flex-col">
-        Location name
+        {{ 'admin.language' | transloco }}
+        <select class="field" name="language" [(ngModel)]="f.language">
+          @for (language of languages; track language) {
+            <option [value]="language">{{ languageNames[language] }}</option>
+          }
+        </select>
+      </label>
+      <label class="mb-3.5 flex flex-col">
+        {{ 'admin.locationName' | transloco }}
         <input class="field" name="locationName" [(ngModel)]="f.locationName" />
       </label>
       <div class="mb-3.5 flex">
         <label class="mr-3 flex flex-1 flex-col">
-          Latitude
+          {{ 'admin.latitude' | transloco }}
           <input class="field" name="latitude" type="number" step="any" [(ngModel)]="f.latitude" />
         </label>
         <label class="flex flex-1 flex-col">
-          Longitude
+          {{ 'admin.longitude' | transloco }}
           <input
             class="field"
             name="longitude"
@@ -39,15 +47,14 @@
         </label>
       </div>
       <fieldset class="mb-5">
-        <legend class="mb-1">Outlook calendars</legend>
+        <legend class="mb-1">{{ 'admin.calendars' | transloco }}</legend>
         <p class="mb-2 text-sm opacity-70">
-          In Outlook on the web: Settings → Calendar → Shared calendars → Publish a calendar. Copy
-          the ICS link.
+          {{ 'admin.calendarsHelp' | transloco }}
         </p>
         @for (calendar of f.calendars; track $index; let i = $index) {
           <div class="calendar mb-2 flex items-end">
             <label class="mr-2 flex w-28 flex-col text-sm">
-              Name
+              {{ 'admin.calendarName' | transloco }}
               <input
                 id="calendar-name-{{ i }}"
                 class="field"
@@ -56,7 +63,7 @@
               />
             </label>
             <label class="mr-2 flex flex-col text-sm">
-              Colour
+              {{ 'admin.calendarColour' | transloco }}
               <input
                 id="calendar-color-{{ i }}"
                 class="field h-[42px] w-12 cursor-pointer p-1"
@@ -66,7 +73,7 @@
               />
             </label>
             <label class="mr-2 flex min-w-0 flex-1 flex-col text-sm">
-              ICS link
+              {{ 'admin.calendarLink' | transloco }}
               <input
                 id="calendar-url-{{ i }}"
                 class="field"
@@ -79,21 +86,24 @@
             <button
               type="button"
               class="mb-1 rounded px-2 py-2 text-sm underline"
-              [attr.aria-label]="'Remove ' + (calendar.name || 'calendar')"
+              [attr.aria-label]="
+                'admin.removeCalendar'
+                  | transloco: { name: calendar.name || ('admin.unnamedCalendar' | transloco) }
+              "
               (click)="removeCalendar(f, i)"
             >
-              Remove
+              {{ 'admin.remove' | transloco }}
             </button>
           </div>
         }
         <button type="button" class="text-sm underline" (click)="addCalendar(f)">
-          Add calendar
+          {{ 'admin.addCalendar' | transloco }}
         </button>
       </fieldset>
       <fieldset class="mb-5">
-        <legend class="mb-1">Background images</legend>
+        <legend class="mb-1">{{ 'admin.backgrounds' | transloco }}</legend>
         <p class="mb-2 text-sm opacity-70">
-          Shown behind the dashboard, one at a time. Photos are made smaller before they upload.
+          {{ 'admin.backgroundsHelp' | transloco }}
         </p>
         <div class="flex flex-wrap">
           @for (name of f.backgrounds; track name; let i = $index) {
@@ -102,7 +112,7 @@
               <button
                 type="button"
                 class="absolute right-1 top-1 rounded bg-black/60 px-1.5 text-sm text-white"
-                [attr.aria-label]="'Remove background ' + (i + 1)"
+                [attr.aria-label]="'admin.removeBackground' | transloco: { number: i + 1 }"
                 (click)="removeBackground(f, name)"
               >
                 ✕
@@ -111,7 +121,7 @@
           }
         </div>
         <label class="mb-3.5 inline-block cursor-pointer text-sm underline">
-          Add images
+          {{ 'admin.addImages' | transloco }}
           <input
             class="add-backgrounds sr-only"
             type="file"
@@ -121,7 +131,7 @@
           />
         </label>
         <label class="flex flex-col">
-          Change image every (minutes)
+          {{ 'admin.backgroundMinutes' | transloco }}
           <input
             class="field"
             name="backgroundMinutes"
@@ -134,18 +144,17 @@
         </label>
       </fieldset>
       <fieldset class="mb-5">
-        <legend class="mb-1">Night mode</legend>
+        <legend class="mb-1">{{ 'admin.nightMode' | transloco }}</legend>
         <p class="mb-2 text-sm opacity-70">
-          Shows only a dim clock on black during these hours. A tap brings the dashboard back for a
-          minute.
+          {{ 'admin.nightHelp' | transloco }}
         </p>
         <label class="mb-3.5 flex items-center">
           <input class="mr-2" name="nightMode" type="checkbox" [(ngModel)]="f.nightMode" />
-          Dim the dashboard at night
+          {{ 'admin.nightToggle' | transloco }}
         </label>
         <div class="flex">
           <label class="mr-3 flex flex-1 flex-col">
-            From
+            {{ 'admin.from' | transloco }}
             <input
               class="field"
               name="nightStart"
@@ -156,7 +165,7 @@
             />
           </label>
           <label class="flex flex-1 flex-col">
-            Until
+            {{ 'admin.until' | transloco }}
             <input
               class="field"
               name="nightEnd"
@@ -170,10 +179,9 @@
       </fieldset>
       @if (scenes().length) {
         <fieldset class="mb-5">
-          <legend class="mb-1">Scene shortcuts</legend>
+          <legend class="mb-1">{{ 'admin.shortcuts' | transloco }}</legend>
           <p class="mb-2 text-sm opacity-70">
-            Hue scenes to show as buttons next to the lights on the home screen, in the order you
-            tick them.
+            {{ 'admin.shortcutsHelp' | transloco }}
           </p>
           @for (scene of scenes(); track scene.id) {
             <label class="mb-1.5 flex items-center">
@@ -194,15 +202,15 @@
           type="submit"
           class="rounded bg-neutral-800 px-4 py-2 text-white dark:bg-neutral-200 dark:text-neutral-900"
         >
-          Save
+          {{ 'admin.save' | transloco }}
         </button>
-        <span class="ml-4">{{ status() }}</span>
-        <a class="ml-auto text-blue-700 underline dark:text-[#5aa9ff]" routerLink="/"
-          >View dashboard</a
-        >
+        <span class="ml-4">{{ status() | text }}</span>
+        <a class="ml-auto text-blue-700 underline dark:text-[#5aa9ff]" routerLink="/">{{
+          'admin.viewDashboard' | transloco
+        }}</a>
       </div>
     </form>
   } @else {
-    <p>Loading…</p>
+    <p>{{ 'admin.loading' | transloco }}</p>
   }
 </div>

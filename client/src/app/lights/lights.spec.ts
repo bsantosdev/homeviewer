@@ -361,7 +361,7 @@ describe('Lights', () => {
         .expectOne('/api/rooms/living-id/scenes')
         .flush('Unreachable', { status: 502, statusText: 'Bad Gateway' });
       await fixture.whenStable();
-      expect(text(el, '.scenes')).toBe("Couldn't load the scenes.");
+      expect(text(el, '.scenes')).toBe('Couldn’t load the scenes.');
     });
 
     it('sets a white with the slider', async () => {

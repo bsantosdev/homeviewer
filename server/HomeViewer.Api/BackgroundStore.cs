@@ -12,15 +12,17 @@ public record BackgroundUpload(string Name);
 public partial class BackgroundStore(string folder)
 {
     /// <summary>The admin page shrinks photos before uploading them; this only stops runaway files.</summary>
-    public const int MaxBytes = 15 * 1024 * 1024;
+    public const int MaxBytes = MaxMegabytes * 1024 * 1024;
+
+    private const int MaxMegabytes = 15;
 
     /// <summary>Stores a JPEG or PNG and returns its new name.</summary>
-    /// <exception cref="InvalidDataException">The upload is too large or not a JPEG or PNG.</exception>
+    /// <exception cref="InvalidImageException">The upload is too large or not a JPEG or PNG.</exception>
     public async Task<string> SaveAsync(Stream content, CancellationToken cancellationToken)
     {
         var bytes = await ReadAsync(content, cancellationToken);
         var extension = ExtensionOf(bytes)
-            ?? throw new InvalidDataException("Only JPEG and PNG images can be used as backgrounds.");
+            ?? throw new InvalidImageException(new("imageType", "Only JPEG and PNG images can be used as backgrounds."));
         var name = Guid.NewGuid().ToString("N") + extension;
         Directory.CreateDirectory(folder);
         await File.WriteAllBytesAsync(Path.Combine(folder, name), bytes, cancellationToken);
@@ -57,7 +59,10 @@ public partial class BackgroundStore(string folder)
         while ((read = await content.ReadAsync(chunk, cancellationToken)) > 0)
         {
             if (buffer.Length + read > MaxBytes)
-                throw new InvalidDataException($"Images can be at most {MaxBytes / 1024 / 1024} MB.");
+                throw new InvalidImageException(new(
+                    "imageSize",
+                    $"Images can be at most {MaxMegabytes} MB.",
+                    new Dictionary<string, object> { ["megabytes"] = MaxMegabytes }));
             buffer.Write(chunk, 0, read);
         }
         return buffer.ToArray();

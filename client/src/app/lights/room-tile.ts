@@ -12,6 +12,8 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { BulbIcon, MoreHorizontalIcon } from '@hugeicons/core-free-icons';
+import { TranslocoPipe } from '@jsverse/transloco';
+import { Text, TextPipe } from '../i18n';
 
 /** How far a finger can wander before a tap counts as a swipe. */
 export const SWIPE_THRESHOLD_PX = 8;
@@ -19,6 +21,14 @@ export const SWIPE_THRESHOLD_PX = 8;
 export const KEY_STEP = 10;
 /** For a room that's on but whose lights report no colour, such as lights that only dim. */
 export const DEFAULT_COLOR = '#fbbf24';
+
+/** "Off", "On" for a room that doesn't dim, or its brightness. */
+export function roomStatus(on: boolean, brightness: number | null): Text {
+  if (!on) return { key: 'lights.off' };
+  return brightness === null
+    ? { key: 'lights.on' }
+    : { key: 'lights.brightness', params: { value: brightness } };
+}
 
 /**
  * One room as a big button: tap to switch it, swipe up or down to dim it. The tile fills from the
@@ -30,7 +40,7 @@ export const DEFAULT_COLOR = '#fbbf24';
  */
 @Component({
   selector: 'app-room-tile',
-  imports: [HugeiconsIconComponent],
+  imports: [HugeiconsIconComponent, TextPipe, TranslocoPipe],
   templateUrl: './room-tile.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: { class: 'relative block' },
@@ -59,11 +69,7 @@ export class RoomTile {
     if (colors.length > 1) return `linear-gradient(to right, ${colors.join(', ')})`;
     return colors[0] ?? DEFAULT_COLOR;
   });
-  protected readonly status = computed(() => {
-    const brightness = this.brightness();
-    if (!this.on()) return 'Off';
-    return brightness === null ? 'On' : `${String(brightness)}%`;
-  });
+  protected readonly status = computed(() => roomStatus(this.on(), this.brightness()));
 
   private readonly tile = viewChild.required<ElementRef<HTMLButtonElement>>('tile');
   private readonly document = inject(DOCUMENT);
