@@ -90,6 +90,8 @@ jobs:
 
       - run: dotnet tool install --global dotnet-sonarscanner
 
+      # The translations repeat the same keys in every language by design, so they're left out of
+      # duplication checks (Sonar still analyses them for bugs and smells).
       - name: Begin analysis
         run: >
           dotnet sonarscanner begin
@@ -101,6 +103,7 @@ jobs:
           /d:sonar.javascript.lcov.reportPaths="client/coverage/client/lcov.info"
           /d:sonar.exclusions="**/node_modules/**,client/coverage/**,client/.angular/**,server/HomeViewer.Api/wwwroot/**"
           /d:sonar.test.inclusions="client/src/**/*.spec.ts,client/src/testing/**"
+          /d:sonar.cpd.exclusions="client/src/app/i18n/**"
           /d:sonar.qualitygate.wait=true
 
       - run: dotnet build HomeViewer.slnx
