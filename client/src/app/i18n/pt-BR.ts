@@ -54,6 +54,23 @@ export const ptBR: Messages = {
     rainUntil: 'Chuva até {{ time }}',
     rainFrom: 'Chuva a partir das {{ time }}',
     rainAhead: 'Chuva nas próximas horas',
+    uv: 'UV {{ value }} · {{ level }}',
+    uvLevels: {
+      low: 'Baixo',
+      moderate: 'Moderado',
+      high: 'Alto',
+      veryHigh: 'Muito alto',
+      extreme: 'Extremo',
+    },
+    air: 'Ar: {{ level }}',
+    airLevels: {
+      good: 'Bom',
+      fair: 'Razoável',
+      moderate: 'Moderado',
+      poor: 'Ruim',
+      veryPoor: 'Muito ruim',
+      extremelyPoor: 'Extremamente ruim',
+    },
   },
   lights: {
     title: 'Luzes',

@@ -54,6 +54,23 @@ export const de: Messages = {
     rainUntil: 'Regen bis {{ time }}',
     rainFrom: 'Regen ab {{ time }}',
     rainAhead: 'Regen in den nächsten Stunden',
+    uv: 'UV {{ value }} · {{ level }}',
+    uvLevels: {
+      low: 'Niedrig',
+      moderate: 'Mäßig',
+      high: 'Hoch',
+      veryHigh: 'Sehr hoch',
+      extreme: 'Extrem',
+    },
+    air: 'Luft: {{ level }}',
+    airLevels: {
+      good: 'Gut',
+      fair: 'Akzeptabel',
+      moderate: 'Mäßig',
+      poor: 'Schlecht',
+      veryPoor: 'Sehr schlecht',
+      extremelyPoor: 'Extrem schlecht',
+    },
   },
   lights: {
     title: 'Licht',

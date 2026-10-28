@@ -18,6 +18,8 @@ const MAINLY_CLEAR: Weather = {
   isDay: true,
   rain: null,
   days: [],
+  uv: null,
+  air: null,
 };
 
 const WITH_CALENDAR = {
@@ -176,6 +178,43 @@ describe('Dashboard', () => {
     await fixture.whenStable();
     expect(el.querySelector('.weather-rain')).toBeNull();
     expect(el.querySelector('.weather-day')).toBeNull();
+  });
+
+  it('shows the UV index and air quality', async () => {
+    current.mockResolvedValue({
+      ...MAINLY_CLEAR,
+      uv: { value: 6, level: 'weather.uvLevels.high' },
+      air: { value: 24, level: 'weather.airLevels.fair' },
+    });
+    await loadSettings();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(text(el, '.weather-uv')).toBe('UV 6 · High');
+    expect(text(el, '.weather-air')).toBe('Air: Fair');
+  });
+
+  it('shows air quality alone when the UV index is too low to matter', async () => {
+    current.mockResolvedValue({
+      ...MAINLY_CLEAR,
+      air: { value: 5, level: 'weather.airLevels.good' },
+    });
+    await loadSettings();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(el.querySelector('.weather-uv')).toBeNull();
+    expect(text(el, '.weather-air')).toBe('Air: Good');
+  });
+
+  it('shows the UV index alone without air quality', async () => {
+    current.mockResolvedValue({
+      ...MAINLY_CLEAR,
+      uv: { value: 2, level: 'weather.uvLevels.low' },
+    });
+    await loadSettings();
+    await Promise.resolve();
+    await fixture.whenStable();
+    expect(text(el, '.weather-uv')).toBe('UV 2 · Low');
+    expect(el.querySelector('.weather-air')).toBeNull();
   });
 
   it('logs weather errors and keeps running', async () => {
@@ -514,6 +553,8 @@ describe('Dashboard', () => {
         ...MAINLY_CLEAR,
         rain: { key: 'weather.rainUntil', params: { time: '16:00' } },
         days: [{ date: new Date(2026, 9, 24), min: 12, max: 19, condition: 'rain' }],
+        uv: { value: 6, level: 'weather.uvLevels.high' },
+        air: { value: 24, level: 'weather.airLevels.fair' },
       });
       events.mockResolvedValue([
         {
@@ -542,6 +583,8 @@ describe('Dashboard', () => {
       expect(text(el, '.date')).toBe('Freitag, 23. Oktober');
       expect(text(el, '.weather-summary')).toBe('Überwiegend klar');
       expect(text(el, '.weather-rain')).toBe('Regen bis 16:00');
+      expect(text(el, '.weather-uv')).toBe('UV 6 · Hoch');
+      expect(text(el, '.weather-air')).toBe('Luft: Akzeptabel');
       expect(text(el, '.weather-day div')).toBe('Sa.');
       expect(sections()).toEqual([
         'Heute Nichts geplant',
@@ -557,6 +600,7 @@ describe('Dashboard', () => {
       // Lowercase in the text; CSS capitalises the first letter on screen.
       expect(text(el, '.date')).toBe('sexta-feira, 23 de outubro');
       expect(text(el, '.weather-rain')).toBe('Chuva até 16:00');
+      expect(text(el, '.weather-air')).toBe('Ar: Razoável');
       expect(sections()[1]).toBe('Amanhã Family Dia todo Market');
       expect(navLabels()).toEqual(['Início', 'Lista de compras', 'Timer', 'E-mail']);
     });
