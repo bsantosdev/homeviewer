@@ -57,6 +57,23 @@ export const en = {
     rainUntil: 'Rain until {{ time }}',
     rainFrom: 'Rain from {{ time }}',
     rainAhead: 'Rain for the next hours',
+    uv: 'UV {{ value }} · {{ level }}',
+    uvLevels: {
+      low: 'Low',
+      moderate: 'Moderate',
+      high: 'High',
+      veryHigh: 'Very high',
+      extreme: 'Extreme',
+    },
+    air: 'Air: {{ level }}',
+    airLevels: {
+      good: 'Good',
+      fair: 'Fair',
+      moderate: 'Moderate',
+      poor: 'Poor',
+      veryPoor: 'Very poor',
+      extremelyPoor: 'Extremely poor',
+    },
   },
   lights: {
     title: 'Lights',

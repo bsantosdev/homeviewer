@@ -14,9 +14,11 @@ import { TextPipe } from '../i18n';
 import {
   BulbIcon,
   Home09Icon,
+  Leaf01Icon,
   Mail01Icon,
   ShoppingBasket01Icon,
   StopWatchIcon,
+  SunglassesIcon,
   UmbrellaIcon,
 } from '@hugeicons/core-free-icons';
 import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
@@ -90,6 +92,8 @@ export class Dashboard {
   protected readonly weather = signal<Weather | null>(null);
   protected readonly weatherIconFor = weatherIconFor;
   protected readonly umbrellaIcon = UmbrellaIcon;
+  protected readonly uvIcon = SunglassesIcon;
+  protected readonly airIcon = Leaf01Icon;
   /** Shown on the list's button, so it's clear from home that there's shopping to do. */
   protected readonly toBuy = inject(ShoppingService).open;
   private readonly chosen = signal<Page>('home');

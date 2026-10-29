@@ -1,6 +1,6 @@
 # HomeViewer
 
-Wall-mounted dashboard for an iPad on the home network. A bar at the top, next to the title and message, switches between Home, Lights, Shopping list, Timer and Email. Home shows a clock and the date, and widgets for the weather (with a rain alert and the next four days), the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
+Wall-mounted dashboard for an iPad on the home network. A bar at the top, next to the title and message, switches between Home, Lights, Shopping list, Timer and Email. Home shows a clock and the date, and widgets for the weather (with a rain alert, the UV index, air quality and the next four days), the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
 
 - `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
 - `client`: Angular 21 app (standalone components, signals), styled with Tailwind CSS v3.

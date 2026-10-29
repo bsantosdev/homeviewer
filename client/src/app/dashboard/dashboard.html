@@ -124,6 +124,33 @@
                     </span>
                   </span>
                 </div>
+                @if (w.uv || w.air) {
+                  <p class="m-0 mt-[1.5vh] flex items-center text-vh-2.5 opacity-80">
+                    @if (w.uv; as uv) {
+                      <span class="weather-uv mr-[3vh] flex items-center">
+                        <hugeicons-icon
+                          class="mr-[1vh] block h-[3vh] w-[3vh] shrink-0"
+                          [icon]="uvIcon"
+                          [strokeWidth]="2"
+                        />
+                        {{
+                          'weather.uv'
+                            | transloco: { value: uv.value, level: (uv.level | transloco) }
+                        }}
+                      </span>
+                    }
+                    @if (w.air; as air) {
+                      <span class="weather-air flex items-center">
+                        <hugeicons-icon
+                          class="mr-[1vh] block h-[3vh] w-[3vh] shrink-0"
+                          [icon]="airIcon"
+                          [strokeWidth]="2"
+                        />
+                        {{ 'weather.air' | transloco: { level: (air.level | transloco) } }}
+                      </span>
+                    }
+                  </p>
+                }
                 @if (w.rain) {
                   <p class="weather-rain m-0 mt-[1.5vh] flex items-center text-vh-2.5 font-medium">
                     <hugeicons-icon

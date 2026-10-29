@@ -28,6 +28,16 @@ export interface Weather {
   rain: Text | null;
   /** The next days, after today. */
   days: DayForecast[];
+  /** The UV index now, or null while it's too low to matter, e.g. at night. */
+  uv: Reading | null;
+  /** The European air quality index now, or null if the air quality service couldn't say. */
+  air: Reading | null;
+}
+
+export interface Reading {
+  value: number;
+  /** A translation key for how good or bad the value is. */
+  level: string;
 }
 
 export interface DayForecast {
@@ -39,7 +49,7 @@ export interface DayForecast {
 }
 
 interface OpenMeteoResponse {
-  current: { temperature_2m: number; weather_code: number; is_day: 0 | 1 };
+  current: { temperature_2m: number; weather_code: number; is_day: 0 | 1; uv_index: number | null };
   /** From the current hour on, in the location's time ("2026-10-23T15:00"). Gaps are null. */
   hourly: Hourly;
   /** Today first ("2026-10-23"). */
@@ -49,6 +59,10 @@ interface OpenMeteoResponse {
     temperature_2m_min: number[];
     temperature_2m_max: number[];
   };
+}
+
+interface AirQualityResponse {
+  current: { european_aqi: number | null };
 }
 
 interface Hourly {
@@ -94,27 +108,49 @@ const WEATHER_CODES: Record<number, [string, WeatherCondition] | undefined> = {
   99: ['weather.thunderstormHail', 'thunderstorm'],
 };
 
+// Where each level starts, lowest first: the WHO's UV index bands and the European air quality
+// index bands.
+const UV_LEVELS: [number, string][] = [
+  [0, 'weather.uvLevels.low'],
+  [3, 'weather.uvLevels.moderate'],
+  [6, 'weather.uvLevels.high'],
+  [8, 'weather.uvLevels.veryHigh'],
+  [11, 'weather.uvLevels.extreme'],
+];
+const AIR_LEVELS: [number, string][] = [
+  [0, 'weather.airLevels.good'],
+  [20, 'weather.airLevels.fair'],
+  [40, 'weather.airLevels.moderate'],
+  [60, 'weather.airLevels.poor'],
+  [80, 'weather.airLevels.veryPoor'],
+  [100, 'weather.airLevels.extremelyPoor'],
+];
+
 export const OPEN_METEO_URL = 'https://api.open-meteo.com/v1/forecast';
+export const AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
 
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
   private readonly http = inject(HttpClient);
 
   async current(latitude: number, longitude: number): Promise<Weather> {
-    const data = await firstValueFrom(
-      this.http.get<OpenMeteoResponse>(OPEN_METEO_URL, {
-        params: {
-          latitude,
-          longitude,
-          current: 'temperature_2m,weather_code,is_day',
-          hourly: 'precipitation_probability,precipitation',
-          daily: 'weather_code,temperature_2m_min,temperature_2m_max',
-          timezone: 'auto',
-          forecast_days: FORECAST_DAYS + 1,
-          forecast_hours: RAIN_HOURS,
-        },
-      }),
-    );
+    const [data, aqi] = await Promise.all([
+      firstValueFrom(
+        this.http.get<OpenMeteoResponse>(OPEN_METEO_URL, {
+          params: {
+            latitude,
+            longitude,
+            current: 'temperature_2m,weather_code,is_day,uv_index',
+            hourly: 'precipitation_probability,precipitation',
+            daily: 'weather_code,temperature_2m_min,temperature_2m_max',
+            timezone: 'auto',
+            forecast_days: FORECAST_DAYS + 1,
+            forecast_hours: RAIN_HOURS,
+          },
+        }),
+      ),
+      this.airQuality(latitude, longitude),
+    ]);
     const [description, condition] = describe(data.current.weather_code);
     const { daily, hourly } = data;
     return {
@@ -136,8 +172,38 @@ export class WeatherService {
         max: Math.round(daily.temperature_2m_max[i + 1]),
         condition: describe(daily.weather_code[i + 1])[1],
       })),
+      uv: uvReading(data.current.uv_index),
+      air: aqi === null ? null : reading(aqi, AIR_LEVELS),
     };
   }
+
+  /** A separate service, so the weather still shows if it fails. */
+  private async airQuality(latitude: number, longitude: number): Promise<number | null> {
+    try {
+      const data = await firstValueFrom(
+        this.http.get<AirQualityResponse>(AIR_QUALITY_URL, {
+          params: { latitude, longitude, current: 'european_aqi' },
+        }),
+      );
+      return data.current.european_aqi;
+    } catch (err: unknown) {
+      console.error('Air quality fetch failed', err);
+      return null;
+    }
+  }
+}
+
+/** A UV index that rounds to 0 isn't worth showing. */
+function uvReading(index: number | null): Reading | null {
+  return index === null || Math.round(index) === 0 ? null : reading(index, UV_LEVELS);
+}
+
+/** Rounds the value and finds the highest level it reaches. */
+function reading(value: number, levels: [number, string][]): Reading {
+  const rounded = Math.round(value);
+  let level = levels[0][1];
+  for (const [from, key] of levels) if (rounded >= from) level = key;
+  return { value: rounded, level };
 }
 
 function describe(code: number): [string, WeatherCondition] {
