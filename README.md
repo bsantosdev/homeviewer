@@ -1,8 +1,8 @@
 # HomeViewer
 
-Wall-mounted dashboard for an iPad on the home network. A bar at the top, next to the title and message, switches between Home, Lights, Shopping list, Timer and Email. Home shows a clock and the date, and widgets for the weather (with a rain alert, the UV index, air quality and the next four days), the week's events and the lights, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
+Wall-mounted dashboard for an iPad on the home network. A bar at the top, next to the title and message, switches between Home, Lights, Music, Shopping list, Timer and Email. Home shows a clock and the date, and widgets for the weather (with a rain alert, the UV index, air quality and the next four days), the week's events and the lights, and what Spotify is playing, as translucent cards over the background photo. Email is a placeholder for now. Settings are edited at `/admin` and appear on every open dashboard straight away, through SignalR.
 
-- `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
+- `server/HomeViewer.Api`: .NET 10 minimal API. It serves the API (`/api/settings`, `/api/events`, `/api/rooms`, `/api/backgrounds`, `/api/spotify`), the SignalR hub (`/hubs/dashboard`) and the built Angular app. Settings are stored in `data/settings.json`.
 - `client`: Angular 21 app (standalone components, signals), styled with Tailwind CSS v3.
 - `server/HomeViewer.Api.Tests`: xUnit tests for the API, including SignalR.
 
@@ -148,6 +148,36 @@ Rooms are listed by name; to rename one, rename it in the Hue app. Only rooms sh
    Keep the key out of `appsettings.json` and anything else in the repository: anyone with it can control your lights.
 
 Without these settings, `/api/rooms` answers 503 and the dashboard hides the button. Give the bridge a fixed IP address in your router so the setting keeps working.
+
+## Spotify
+
+With a Spotify app configured, a Music entry appears in the top bar. It shows what your account is playing, on any device: the cover, the title and artist, how far in it is, and which device it plays on. Below that are play/pause, previous and next, the volume (where the device allows it), the devices with Spotify open (tap one to move playback there) and your playlists (tap one to play it). On Home, a strip under the clock shows the song with a play/pause button; tap the song to open Music.
+
+The iPad doesn't play the music itself: it's a remote for your speakers, phones and computers. Controlling playback needs Spotify Premium.
+
+1. Log in at https://developer.spotify.com/dashboard with the Premium account and create an app. Under **Which API/SDKs are you planning to use?**, tick **Web API**. As the **Redirect URI**, add exactly:
+
+   ```text
+   http://127.0.0.1:5000/api/spotify/callback
+   ```
+
+   Spotify only accepts https or a loopback address here, which is why the login has to happen on the server's own computer (step 3).
+
+2. Copy the app's **Client ID** and give it to the server as an environment variable, then restart it. The login uses PKCE, so the client secret isn't needed.
+
+   ```powershell
+   setx Spotify__ClientId "<client id>"
+   ```
+
+   As with the Hue settings, restart VS Code or copy the value into the current terminal (`$env:Spotify__ClientId = [Environment]::GetEnvironmentVariable('Spotify__ClientId', 'User')`).
+
+3. On the server's computer, open http://127.0.0.1:5000/admin, choose **Connect Spotify** under **Spotify**, and log in. Spotify sends you back to the settings page, which now says **Connected**.
+
+The server keeps the account's login in `data/spotify.json`, which stays out of git: anyone with it can control your Spotify. **Disconnect** in `/admin` deletes it. Other people in the household can use the dashboard with your account; to use theirs instead, add them under **User Management** in the app's settings (Spotify allows five users per app in development mode) and connect their account.
+
+Each screen asks what's playing every 5 seconds. Spotify limits how often an app may call it, so the server shares each answer between screens for 3 seconds, and pauses when Spotify asks it to. Nothing is asked at night.
+
+Without a Client ID, `/api/spotify` answers 503 and the dashboard hides the button.
 
 ## Notes
 

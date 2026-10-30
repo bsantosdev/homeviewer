@@ -8,6 +8,7 @@ import { LANGUAGES, LANGUAGE_NAMES, Text, TextError, TextPipe, isApiError } from
 import { en } from '../i18n/en';
 import { LightsService, RoomScene } from '../lights.service';
 import { DashboardSettings, SettingsService } from '../settings.service';
+import { SpotifyService } from '../spotify.service';
 
 /** Colours for new calendars, in turn. */
 export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];
@@ -35,6 +36,8 @@ export class Admin {
   protected readonly status = signal<Text | null>(null);
   /** Every room's Hue scenes to pick shortcuts from; empty while there's no bridge. */
   protected readonly scenes = signal<RoomScene[]>([]);
+  /** Its section only shows once the server says Spotify is set up. */
+  protected readonly spotify = inject(SpotifyService);
 
   constructor() {
     // Take a copy of the settings once loaded, so edits don't touch the live signal.
@@ -49,6 +52,7 @@ export class Admin {
         });
     });
     void this.loadScenes(inject(LightsService));
+    void this.spotify.load();
   }
 
   protected toggleShortcut(form: DashboardSettings, id: string, on: boolean): void {

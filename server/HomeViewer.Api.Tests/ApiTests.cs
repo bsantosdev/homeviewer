@@ -10,7 +10,8 @@ namespace HomeViewer.Api.Tests;
 
 /// <summary>
 /// Runs the real app in memory, with settings and static files in a temp folder,
-/// calendar downloads answered by <see cref="Calendars"/> and a Hue bridge faked by <see cref="Hue"/>.
+/// calendar downloads answered by <see cref="Calendars"/>, a Hue bridge faked by <see cref="Hue"/> and Spotify
+/// faked by <see cref="SpotifyWeb"/>.
 /// </summary>
 public sealed class HomeViewerFactory : WebApplicationFactory<Program>
 {
@@ -19,6 +20,7 @@ public sealed class HomeViewerFactory : WebApplicationFactory<Program>
     public string WebRoot => Path.Combine(Root, "wwwroot");
     public FakeCalendarHandler Calendars { get; } = new();
     public FakeHueBridge Hue { get; } = new();
+    public FakeSpotify SpotifyWeb { get; } = new();
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -28,11 +30,13 @@ public sealed class HomeViewerFactory : WebApplicationFactory<Program>
         builder.UseSetting("SettingsPath", SettingsPath);
         builder.UseSetting("Hue:BridgeAddress", FakeHueBridge.Address);
         builder.UseSetting("Hue:AppKey", FakeHueBridge.AppKey);
+        builder.UseSetting("Spotify:ClientId", FakeSpotify.ClientId);
         builder.UseWebRoot(WebRoot);
         builder.ConfigureTestServices(services =>
         {
             services.AddHttpClient(nameof(CalendarFeedReader)).ConfigurePrimaryHttpMessageHandler(() => Calendars);
             services.AddHttpClient(nameof(HueBridge)).ConfigurePrimaryHttpMessageHandler(() => Hue);
+            services.AddHttpClient(nameof(Spotify)).ConfigurePrimaryHttpMessageHandler(() => SpotifyWeb);
         });
     }
 

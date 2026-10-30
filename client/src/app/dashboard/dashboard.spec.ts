@@ -5,9 +5,17 @@ import { Dashboard, EVENTS_REFRESH_MS, LIGHTS_REFRESH_MS, WEATHER_REFRESH_MS } f
 import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService, Room } from '../lights.service';
 import { SettingsService } from '../settings.service';
+import { MUSIC_REFRESH_MS, SpotifyService, SpotifyStatus } from '../spotify.service';
 import { Weather, WeatherService } from '../weather.service';
 import { WAKE_MS } from '../night';
-import { TEST_SETTINGS, provideTestBackend, query, text } from '../../testing/test-helpers';
+import {
+  PLAYING,
+  SONG,
+  TEST_SETTINGS,
+  provideTestBackend,
+  query,
+  text,
+} from '../../testing/test-helpers';
 
 const MAINLY_CLEAR: Weather = {
   temperature: 21,
@@ -34,6 +42,12 @@ describe('Dashboard', () => {
   let events: ReturnType<typeof vi.fn<(from: Date, to: Date) => Promise<CalendarEvent[]>>>;
   let rooms: ReturnType<typeof signal<Room[] | null>>;
   let loadLights: ReturnType<typeof vi.fn<() => Promise<void>>>;
+  let music: ReturnType<typeof signal<SpotifyStatus | null>>;
+  let spotify: {
+    load: ReturnType<typeof vi.fn<() => Promise<void>>>;
+    play: ReturnType<typeof vi.fn>;
+    pause: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     // Fake only the clocks the component uses; Angular's scheduler keeps real timeouts.
@@ -43,6 +57,12 @@ describe('Dashboard', () => {
     events = vi.fn().mockResolvedValue([]);
     rooms = signal<Room[] | null>(null);
     loadLights = vi.fn().mockResolvedValue(undefined);
+    music = signal<SpotifyStatus | null>(null);
+    spotify = {
+      load: vi.fn().mockResolvedValue(undefined),
+      play: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn().mockResolvedValue(undefined),
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -50,6 +70,17 @@ describe('Dashboard', () => {
         { provide: WeatherService, useValue: { current } },
         { provide: CalendarService, useValue: { events } },
         { provide: LightsService, useValue: { rooms, load: loadLights } },
+        {
+          provide: SpotifyService,
+          useValue: {
+            status: music,
+            readAt: signal(0),
+            error: signal(null),
+            devices: () => Promise.resolve([]),
+            playlists: () => Promise.resolve([]),
+            ...spotify,
+          },
+        },
       ],
     });
     fixture = TestBed.createComponent(Dashboard);
@@ -272,6 +303,7 @@ describe('Dashboard', () => {
       expect(current).toHaveBeenCalledTimes(1);
       expect(events).toHaveBeenCalledTimes(1);
       expect(loadLights).toHaveBeenCalledTimes(1);
+      expect(spotify.load).toHaveBeenCalledTimes(1);
     });
 
     it('wakes on a tap for a minute, with fresh data', async () => {
@@ -282,6 +314,7 @@ describe('Dashboard', () => {
       expect(text(el, '.clock')).toBe('14:05');
       expect(current).toHaveBeenCalledTimes(2);
       expect(loadLights).toHaveBeenCalledTimes(2);
+      expect(spotify.load).toHaveBeenCalledTimes(2);
 
       await wait(WAKE_MS - 1000);
       expect(asleep()).toBe(false);
@@ -412,6 +445,103 @@ describe('Dashboard', () => {
     expect(current).toHaveBeenCalledTimes(1);
     expect(events).toHaveBeenCalledTimes(1);
     expect(loadLights).toHaveBeenCalledTimes(1);
+    expect(spotify.load).toHaveBeenCalledTimes(1);
+  });
+
+  describe('music', () => {
+    function musicButton(): HTMLButtonElement | null {
+      return el.querySelector<HTMLButtonElement>('nav button[aria-label="Music"]');
+    }
+
+    it('hides the music while Spotify isn’t set up', async () => {
+      await loadSettings();
+      expect(spotify.load).toHaveBeenCalledTimes(1);
+      expect(musicButton()).toBeNull();
+      expect(el.querySelector('.now-playing')).toBeNull();
+    });
+
+    it('opens the music page, after the lights in the top bar', async () => {
+      rooms.set([]);
+      music.set({ connected: true, playback: null });
+      await loadSettings();
+      expect(Array.from(el.querySelectorAll('nav button'), (b) => b.ariaLabel)).toEqual([
+        'Home',
+        'Lights',
+        'Music',
+        'Shopping list',
+        'Timer',
+        'Email',
+      ]);
+
+      musicButton()?.click();
+      await fixture.whenStable();
+
+      expect(el.querySelector('app-music')).not.toBeNull();
+      expect(text(el, 'app-music .title')).toBe('Nothing playing');
+      expect(musicButton()?.getAttribute('aria-current')).toBe('page');
+    });
+
+    it('goes back home if Spotify goes away', async () => {
+      music.set({ connected: true, playback: null });
+      await loadSettings();
+      musicButton()?.click();
+      await fixture.whenStable();
+
+      music.set(null);
+      await fixture.whenStable();
+
+      expect(musicButton()).toBeNull();
+      expect(el.querySelector('app-music')).toBeNull();
+      expect(text(el, '.clock')).toBe('14:05');
+    });
+
+    it('shows what’s playing under the clock, to pause or open', async () => {
+      music.set({ connected: true, playback: PLAYING });
+      await loadSettings();
+
+      expect(text(el, '.now-playing-title')).toBe('Morning Song');
+      expect(text(el, '.now-playing-by')).toBe('First Artist, Second Artist');
+      expect(query(el, '.now-playing img', HTMLImageElement).src).toBe(
+        'https://i.scdn.co/image/medium',
+      );
+      expect(query(el, '.now-playing-toggle').getAttribute('aria-label')).toBe('Pause');
+
+      query(el, '.now-playing-toggle').click();
+      expect(spotify.pause).toHaveBeenCalled();
+
+      query(el, '.now-playing button[aria-label="Open music"]').click();
+      await fixture.whenStable();
+      expect(el.querySelector('app-music')).not.toBeNull();
+    });
+
+    it('resumes from the strip while paused, with or without a cover', async () => {
+      music.set({
+        connected: true,
+        playback: { ...PLAYING, isPlaying: false, item: { ...SONG, image: null } },
+      });
+      await loadSettings();
+      expect(el.querySelector('.now-playing img')).toBeNull();
+
+      query(el, '.now-playing-toggle').click();
+
+      expect(spotify.play).toHaveBeenCalledWith();
+    });
+
+    it('leaves the strip out while nothing, or an ad, plays', async () => {
+      music.set({ connected: true, playback: { ...PLAYING, item: null } });
+      await loadSettings();
+      expect(el.querySelector('.now-playing')).toBeNull();
+
+      music.set({ connected: true, playback: null });
+      await fixture.whenStable();
+      expect(el.querySelector('.now-playing')).toBeNull();
+    });
+
+    it('refreshes what’s playing every few seconds', async () => {
+      await loadSettings();
+      vi.advanceTimersByTime(MUSIC_REFRESH_MS);
+      expect(spotify.load).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('lights', () => {

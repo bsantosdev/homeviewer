@@ -10,6 +10,7 @@ export const de: Messages = {
     lights: 'Licht',
     shopping: 'Einkaufsliste',
     timer: 'Timer',
+    music: 'Musik',
     email: 'E-Mail',
   },
   dashboard: {
@@ -119,6 +120,28 @@ export const de: Messages = {
     done: 'Die Zeit ist um!',
     dismiss: 'Schließen',
   },
+  music: {
+    title: 'Musik',
+    open: 'Musik öffnen',
+    notConnected: 'Verbinde in den Einstellungen ein Spotify-Konto, um zu sehen, was läuft.',
+    nothingPlaying: 'Es läuft nichts',
+    pickSomething: 'Wähle eine Playlist oder ein Gerät zum Abspielen.',
+    ad: 'Werbung',
+    onDevice: 'Auf {{ name }}',
+    play: 'Abspielen',
+    pause: 'Pause',
+    next: 'Weiter',
+    previous: 'Zurück',
+    quieter: 'Leiser',
+    louder: 'Lauter',
+    volume: 'Lautstärke',
+    devices: 'Abspielen auf',
+    noDevices:
+      'Öffne Spotify auf einem Handy, Computer oder Lautsprecher, um von hier abzuspielen.',
+    playlists: 'Playlists',
+    noPlaylists: 'Noch keine Playlists.',
+    failed: 'Spotify konnte das nicht ausführen. Versuch es noch einmal.',
+  },
   maintenance: {
     title: 'Wartungsarbeiten',
     body: 'HomeViewer erreicht seinen Server gerade nicht. Sobald der Server wieder läuft, geht es von selbst weiter.',
@@ -165,6 +188,12 @@ export const de: Messages = {
     shortcuts: 'Szenen-Verknüpfungen',
     shortcutsHelp:
       'Hue-Szenen, die auf dem Startbildschirm als Tasten neben dem Licht erscheinen, in der Reihenfolge, in der du sie anhakst.',
+    spotify: 'Spotify',
+    spotifyHelp:
+      'Zeigt, was läuft, mit Steuerung und deinen Playlists. Spotify schickt dich nach der Anmeldung zu diesem Computer zurück, also verbinde direkt am Server, unter http://127.0.0.1:5000/admin.',
+    spotifyConnect: 'Spotify verbinden',
+    spotifyConnected: 'Verbunden.',
+    spotifyDisconnect: 'Trennen',
     save: 'Speichern',
     saving: 'Wird gespeichert…',
     saved: 'Gespeichert',
@@ -183,5 +212,8 @@ export const de: Messages = {
     imageSize: 'Bilder dürfen höchstens {{ megabytes }} MB groß sein.',
     imageUnreadable: 'Der Browser kann dieses Bild nicht lesen.',
     imageResize: 'Der Browser kann keine Bilder verkleinern.',
+    spotifyNoDevice: 'Öffne zuerst Spotify auf einem Handy, Computer oder Lautsprecher.',
+    spotifyRefused: 'Spotify kann das gerade nicht.',
+    spotifyNotConnected: 'Verbinde zuerst in den Einstellungen ein Spotify-Konto.',
   },
 };
