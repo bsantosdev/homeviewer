@@ -1,0 +1,182 @@
+@if (!connected()) {
+  <p class="not-connected m-auto max-w-[70vh] text-center text-vh-3 opacity-60">
+    {{ 'music.notConnected' | transloco }}
+  </p>
+} @else {
+  <div class="flex shrink-0 items-center">
+    <div
+      class="cover mr-[4vh] flex h-[34vh] w-[34vh] shrink-0 items-center justify-center overflow-hidden rounded-[2vh] bg-neutral-500/20"
+    >
+      @if (playback()?.item?.image; as image) {
+        <img class="block h-full w-full object-cover" [src]="image" alt="" />
+      } @else {
+        <hugeicons-icon class="block h-[10vh] w-[10vh] opacity-40" [icon]="icons.cover" />
+      }
+    </div>
+
+    <div class="min-w-0 flex-1">
+      @if (playback(); as p) {
+        @if (p.item; as item) {
+          <h3 class="title m-0 truncate text-vh-4 font-semibold">{{ item.name }}</h3>
+          <p class="by m-0 mt-[0.8vh] truncate text-vh-3 opacity-80">{{ item.by }}</p>
+          @if (item.album) {
+            <p class="album m-0 mt-[0.5vh] truncate text-vh-2.5 opacity-60">{{ item.album }}</p>
+          }
+          <div
+            class="mt-[2.5vh] h-[0.8vh] overflow-hidden rounded-full bg-black/10 dark:bg-white/15"
+          >
+            <div
+              class="progress h-full rounded-full bg-current"
+              [style.width.%]="percent(item.durationMs)"
+            ></div>
+          </div>
+          <div class="times mt-[0.8vh] flex justify-between text-[2.2vh] tabular-nums opacity-70">
+            <span>{{ formatTime(progress()) }}</span>
+            <span>{{ formatTime(item.durationMs) }}</span>
+          </div>
+        } @else {
+          <h3 class="title m-0 truncate text-vh-4 font-semibold">{{ 'music.ad' | transloco }}</h3>
+        }
+        @if (p.device; as device) {
+          <p class="device m-0 mt-[1vh] flex items-center text-vh-2.5 opacity-70">
+            <hugeicons-icon
+              class="mr-[1vh] block h-[2.8vh] w-[2.8vh] shrink-0"
+              [icon]="deviceIcon(device.type)"
+              [strokeWidth]="2"
+            />
+            <span class="truncate">{{ 'music.onDevice' | transloco: { name: device.name } }}</span>
+          </p>
+        }
+
+        <div class="controls mt-[2.5vh] flex items-center">
+          <button
+            type="button"
+            class="previous h-[8vh] w-[8vh] rounded-full p-[2vh] [-webkit-tap-highlight-color:transparent]"
+            [attr.aria-label]="'music.previous' | transloco"
+            (click)="service.previous()"
+          >
+            <hugeicons-icon class="block h-full w-full" [icon]="icons.previous" [strokeWidth]="2" />
+          </button>
+          <button
+            type="button"
+            class="play-pause mx-[2vh] h-[10vh] w-[10vh] rounded-full bg-[#1a1a1a] p-[2.8vh] text-white shadow [-webkit-tap-highlight-color:transparent] dark:bg-white dark:text-[#1a1a1a]"
+            [attr.aria-label]="(p.isPlaying ? 'music.pause' : 'music.play') | transloco"
+            (click)="p.isPlaying ? service.pause() : service.play()"
+          >
+            <hugeicons-icon
+              class="block h-full w-full"
+              [icon]="p.isPlaying ? icons.pause : icons.play"
+              [strokeWidth]="2"
+            />
+          </button>
+          <button
+            type="button"
+            class="next h-[8vh] w-[8vh] rounded-full p-[2vh] [-webkit-tap-highlight-color:transparent]"
+            [attr.aria-label]="'music.next' | transloco"
+            (click)="service.next()"
+          >
+            <hugeicons-icon class="block h-full w-full" [icon]="icons.next" [strokeWidth]="2" />
+          </button>
+
+          <!-- Muted is 0, which still has controls; null means it can't be changed from here. -->
+          @let volume = p.device?.volume ?? null;
+          @if (volume !== null) {
+            <div
+              class="volume ml-auto flex items-center rounded-full bg-neutral-500/20"
+              role="group"
+              [attr.aria-label]="'music.volume' | transloco"
+            >
+              <button
+                type="button"
+                class="quieter h-[7vh] w-[7vh] rounded-full p-[2vh] [-webkit-tap-highlight-color:transparent]"
+                [attr.aria-label]="'music.quieter' | transloco"
+                (click)="service.setVolume(volume - volumeStep)"
+              >
+                <hugeicons-icon
+                  class="block h-full w-full"
+                  [icon]="icons.quieter"
+                  [strokeWidth]="2"
+                />
+              </button>
+              <span class="volume-value w-[7vh] text-center text-vh-2.5 tabular-nums"
+                >{{ volume }}%</span
+              >
+              <button
+                type="button"
+                class="louder h-[7vh] w-[7vh] rounded-full p-[2vh] [-webkit-tap-highlight-color:transparent]"
+                [attr.aria-label]="'music.louder' | transloco"
+                (click)="service.setVolume(volume + volumeStep)"
+              >
+                <hugeicons-icon
+                  class="block h-full w-full"
+                  [icon]="icons.louder"
+                  [strokeWidth]="2"
+                />
+              </button>
+            </div>
+          }
+        </div>
+      } @else {
+        <h3 class="title m-0 text-vh-4 font-semibold">{{ 'music.nothingPlaying' | transloco }}</h3>
+        <p class="m-0 mt-[1vh] text-vh-2.5 opacity-70">{{ 'music.pickSomething' | transloco }}</p>
+      }
+      @if (service.error(); as error) {
+        <p class="error m-0 mt-[2vh] text-vh-2.5 font-medium text-[#ff3b30]">{{ error | text }}</p>
+      }
+    </div>
+  </div>
+
+  <h3 class="card-title mt-[3vh]">{{ 'music.devices' | transloco }}</h3>
+  <div class="flex shrink-0 flex-wrap">
+    @for (device of devices(); track device.id) {
+      <button
+        type="button"
+        class="device-choice mb-[1vh] mr-[1vh] flex max-w-full items-center rounded-full py-[1vh] pl-[1.5vh] pr-[2vh] text-vh-2.5 [-webkit-tap-highlight-color:transparent]"
+        [class]="
+          device.isActive
+            ? 'bg-[#1a1a1a] text-white dark:bg-white dark:text-[#1a1a1a]'
+            : 'bg-neutral-500/20'
+        "
+        [attr.aria-pressed]="device.isActive"
+        (click)="transfer(device)"
+      >
+        <hugeicons-icon
+          class="mr-[1vh] block h-[2.8vh] w-[2.8vh] shrink-0"
+          [icon]="deviceIcon(device.type)"
+          [strokeWidth]="2"
+        />
+        <span class="truncate">{{ device.name }}</span>
+      </button>
+    } @empty {
+      <p class="no-devices m-0 mb-[1vh] text-vh-2.5 opacity-60">
+        {{ 'music.noDevices' | transloco }}
+      </p>
+    }
+  </div>
+
+  <h3 class="card-title mt-[2vh]">{{ 'music.playlists' | transloco }}</h3>
+  <div class="flex min-h-0 overflow-x-auto [-webkit-overflow-scrolling:touch]">
+    @for (playlist of playlists(); track playlist.uri) {
+      <button
+        type="button"
+        class="playlist mr-[2vh] w-[15vh] shrink-0 text-left [-webkit-tap-highlight-color:transparent]"
+        (click)="playPlaylist(playlist)"
+      >
+        <span
+          class="flex h-[15vh] w-[15vh] items-center justify-center overflow-hidden rounded-[1.5vh] bg-neutral-500/20"
+        >
+          @if (playlist.image) {
+            <img class="block h-full w-full object-cover" [src]="playlist.image" alt="" />
+          } @else {
+            <hugeicons-icon class="block h-[5vh] w-[5vh] opacity-40" [icon]="icons.cover" />
+          }
+        </span>
+        <span class="playlist-name mt-[0.8vh] block truncate text-[2.2vh]">{{
+          playlist.name
+        }}</span>
+      </button>
+    } @empty {
+      <p class="no-playlists m-0 text-vh-2.5 opacity-60">{{ 'music.noPlaylists' | transloco }}</p>
+    }
+  </div>
+}

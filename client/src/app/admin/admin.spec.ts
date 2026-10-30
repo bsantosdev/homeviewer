@@ -5,6 +5,7 @@ import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../te
 import { IMAGE_SHRINKER } from '../backgrounds';
 import { TextError } from '../i18n';
 import { DashboardSettings, SettingsService } from '../settings.service';
+import { SpotifyStatus } from '../spotify.service';
 import { Admin, CALENDAR_COLORS } from './admin';
 
 describe('Admin', () => {
@@ -410,6 +411,53 @@ describe('Admin', () => {
       await submit();
       const req = http.expectOne({ method: 'PUT', url: '/api/settings' });
       expect(req.request.body).toEqual({ ...TEST_SETTINGS, backgrounds: ['b.jpg'] });
+    });
+  });
+
+  describe('Spotify', () => {
+    function spotify(status: SpotifyStatus | null): void {
+      http.expectOne('/api/spotify').flush(status, {
+        status: status === null ? 503 : 200,
+        statusText: status === null ? 'Service Unavailable' : 'OK',
+      });
+    }
+
+    it('is left out while the server has no Spotify app set up', async () => {
+      await loadSettings();
+      spotify(null);
+      await settle();
+
+      expect(el.querySelector('.spotify-connect')).toBeNull();
+      expect(el.querySelector('.spotify-connected')).toBeNull();
+    });
+
+    it('links to Spotify’s login, explaining where to do it', async () => {
+      await loadSettings();
+      spotify({ connected: false, playback: null });
+      await settle();
+
+      const link = query(el, '.spotify-connect', HTMLAnchorElement);
+      expect(link.textContent.trim()).toBe('Connect Spotify');
+      expect(link.getAttribute('href')).toBe('/api/spotify/login');
+      expect(el.textContent).toContain('http://127.0.0.1:5000/admin');
+    });
+
+    it('disconnects a connected account', async () => {
+      await loadSettings();
+      spotify({ connected: true, playback: null });
+      await settle();
+      expect(text(el, '.spotify-connected')).toContain('Connected.');
+
+      button(el, 'Disconnect').click();
+      http.expectOne({ method: 'DELETE', url: '/api/spotify/login' }).flush(null);
+      await settle();
+      spotify({ connected: false, playback: null });
+      await settle();
+
+      expect(el.querySelector('.spotify-connected')).toBeNull();
+      expect(el.querySelector('.spotify-connect')).not.toBeNull();
+      // Disconnecting isn't saving the settings.
+      http.expectNone({ method: 'PUT', url: '/api/settings' });
     });
   });
 });

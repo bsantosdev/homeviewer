@@ -4,6 +4,7 @@ import { vi } from 'vitest';
 import { Text, provideI18n } from '../app/i18n';
 import { en } from '../app/i18n/en';
 import { DashboardSettings, SETTINGS_HUB, SettingsHub } from '../app/settings.service';
+import { Playback, PlayingItem, SpotifyDevice } from '../app/spotify.service';
 
 export const TEST_SETTINGS: DashboardSettings = {
   title: 'Home',
@@ -20,6 +21,30 @@ export const TEST_SETTINGS: DashboardSettings = {
   nightEnd: '07:00',
   sceneShortcuts: [],
   language: 'en',
+};
+
+export const SONG: PlayingItem = {
+  name: 'Morning Song',
+  by: 'First Artist, Second Artist',
+  album: 'Sunrise',
+  image: 'https://i.scdn.co/image/medium',
+  durationMs: 215000,
+};
+
+export const SPEAKER: SpotifyDevice = {
+  id: 'speaker',
+  name: 'Living room speaker',
+  type: 'Speaker',
+  isActive: true,
+  volume: 35,
+};
+
+/** A minute into a song, on a speaker. */
+export const PLAYING: Playback = {
+  isPlaying: true,
+  progressMs: 61000,
+  item: SONG,
+  device: SPEAKER,
 };
 
 /** A stand-in for the SignalR connection that lets tests fire hub events. */

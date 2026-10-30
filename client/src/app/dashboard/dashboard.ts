@@ -16,6 +16,9 @@ import {
   Home09Icon,
   Leaf01Icon,
   Mail01Icon,
+  MusicNote01Icon,
+  PauseIcon,
+  PlayIcon,
   ShoppingBasket01Icon,
   StopWatchIcon,
   SunglassesIcon,
@@ -27,9 +30,11 @@ import { CalendarEvent, CalendarService } from '../calendar.service';
 import { LightsService } from '../lights.service';
 import { Lights } from '../lights/lights';
 import { LightsSummary } from '../lights/lights-summary';
+import { Music } from '../music/music';
 import { WAKE_MS, isNight } from '../night';
 import { SettingsService } from '../settings.service';
 import { ShoppingService } from '../shopping.service';
+import { MUSIC_REFRESH_MS, SpotifyService } from '../spotify.service';
 import { ShoppingList } from '../shopping/shopping-list';
 import { Timer } from '../timer/timer';
 import { weatherIconFor } from '../weather-icons';
@@ -41,7 +46,7 @@ export const EVENTS_REFRESH_MS = 1 * 60 * 1000;
 export const LIGHTS_REFRESH_MS = 15 * 1000;
 
 /** The pages in the top bar. Home holds the widgets; the others fill the space below the bar. */
-type Page = 'home' | 'lights' | 'shopping' | 'timer' | 'email';
+type Page = 'home' | 'lights' | 'music' | 'shopping' | 'timer' | 'email';
 
 interface NavItem {
   page: Page;
@@ -52,6 +57,7 @@ interface NavItem {
 
 const HOME: NavItem = { page: 'home', label: 'nav.home', icon: Home09Icon };
 const LIGHTS: NavItem = { page: 'lights', label: 'nav.lights', icon: BulbIcon };
+const MUSIC: NavItem = { page: 'music', label: 'nav.music', icon: MusicNote01Icon };
 const SHOPPING: NavItem = { page: 'shopping', label: 'nav.shopping', icon: ShoppingBasket01Icon };
 const TIMER: NavItem = { page: 'timer', label: 'nav.timer', icon: StopWatchIcon };
 const EMAIL: NavItem = { page: 'email', label: 'nav.email', icon: Mail01Icon };
@@ -64,6 +70,7 @@ const EMAIL: NavItem = { page: 'email', label: 'nav.email', icon: Mail01Icon };
     HugeiconsIconComponent,
     Lights,
     LightsSummary,
+    Music,
     ShoppingList,
     TextPipe,
     Timer,
@@ -85,6 +92,7 @@ export class Dashboard {
   private readonly calendarService = inject(CalendarService);
   private readonly settingsService = inject(SettingsService);
   private readonly lightsService = inject(LightsService);
+  protected readonly spotify = inject(SpotifyService);
   protected readonly settings = this.settingsService.settings;
   protected readonly isDark = this.settingsService.isDark;
   protected readonly language = this.settingsService.language;
@@ -94,18 +102,35 @@ export class Dashboard {
   protected readonly umbrellaIcon = UmbrellaIcon;
   protected readonly uvIcon = SunglassesIcon;
   protected readonly airIcon = Leaf01Icon;
+  protected readonly playIcon = PlayIcon;
+  protected readonly pauseIcon = PauseIcon;
   /** Shown on the list's button, so it's clear from home that there's shopping to do. */
   protected readonly toBuy = inject(ShoppingService).open;
   private readonly chosen = signal<Page>('home');
   /** The lights only show once the server says a Hue bridge is set up. */
   protected readonly hasLights = computed(() => this.lightsService.rooms() !== null);
-  /** Falls back to home if the bridge goes away while its page is open. */
-  protected readonly page = computed(() =>
-    this.chosen() === 'lights' && !this.hasLights() ? 'home' : this.chosen(),
-  );
-  protected readonly nav = computed(() =>
-    this.hasLights() ? [HOME, LIGHTS, SHOPPING, TIMER, EMAIL] : [HOME, SHOPPING, TIMER, EMAIL],
-  );
+  /** Music only shows once the server says Spotify is set up. */
+  protected readonly hasMusic = computed(() => this.spotify.status() !== null);
+  /** What Spotify is playing or has paused, for the strip under the clock. */
+  protected readonly nowPlaying = computed(() => {
+    const playback = this.spotify.status()?.playback;
+    return playback?.item ? { ...playback, item: playback.item } : null;
+  });
+  /** Falls back to home if the bridge or Spotify goes away while its page is open. */
+  protected readonly page = computed(() => {
+    const chosen = this.chosen();
+    const gone =
+      (chosen === 'lights' && !this.hasLights()) || (chosen === 'music' && !this.hasMusic());
+    return gone ? 'home' : chosen;
+  });
+  protected readonly nav = computed(() => [
+    HOME,
+    ...(this.hasLights() ? [LIGHTS] : []),
+    ...(this.hasMusic() ? [MUSIC] : []),
+    SHOPPING,
+    TIMER,
+    EMAIL,
+  ]);
   /** When the last tap at night stops keeping the dashboard on. */
   private readonly awakeUntil = signal(0);
   /**
@@ -152,7 +177,11 @@ export class Dashboard {
     const lightsTimer = setInterval(() => {
       if (!this.asleep()) void this.lightsService.load();
     }, LIGHTS_REFRESH_MS);
+    const musicTimer = setInterval(() => {
+      if (!this.asleep()) void this.spotify.load();
+    }, MUSIC_REFRESH_MS);
     inject(DestroyRef).onDestroy(() => {
+      clearInterval(musicTimer);
       clearInterval(clock);
       clearInterval(weatherTimer);
       clearInterval(eventsTimer);
@@ -167,6 +196,7 @@ export class Dashboard {
       if (this.calendarUrls() !== undefined) void this.loadEvents();
     });
     void this.lightsService.load();
+    void this.spotify.load();
   }
 
   protected show(page: Page): void {
@@ -183,6 +213,7 @@ export class Dashboard {
     void this.loadWeather();
     void this.loadEvents();
     void this.lightsService.load();
+    void this.spotify.load();
   }
 
   /** Any touch while woken at night starts the minute again, so it doesn't go dark mid-use. */

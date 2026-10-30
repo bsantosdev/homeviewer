@@ -197,6 +197,30 @@
           }
         </fieldset>
       }
+      @if (spotify.status(); as music) {
+        <fieldset class="mb-5">
+          <legend class="mb-1">{{ 'admin.spotify' | transloco }}</legend>
+          @if (music.connected) {
+            <p class="spotify-connected mb-0 flex items-center">
+              {{ 'admin.spotifyConnected' | transloco }}
+              <button
+                type="button"
+                class="ml-3 rounded border border-solid border-neutral-400 px-3 py-1"
+                (click)="spotify.disconnect()"
+              >
+                {{ 'admin.spotifyDisconnect' | transloco }}
+              </button>
+            </p>
+          } @else {
+            <p class="mb-2 text-sm opacity-70">{{ 'admin.spotifyHelp' | transloco }}</p>
+            <a
+              class="spotify-connect inline-block rounded bg-[#1db954] px-4 py-2 font-medium text-black no-underline"
+              href="/api/spotify/login"
+              >{{ 'admin.spotifyConnect' | transloco }}</a
+            >
+          }
+        </fieldset>
+      }
       <div class="flex items-center">
         <button
           type="submit"

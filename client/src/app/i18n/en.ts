@@ -13,6 +13,7 @@ export const en = {
     lights: 'Lights',
     shopping: 'Shopping list',
     timer: 'Timer',
+    music: 'Music',
     email: 'Email',
   },
   dashboard: {
@@ -122,6 +123,27 @@ export const en = {
     done: 'Time’s up!',
     dismiss: 'Dismiss',
   },
+  music: {
+    title: 'Music',
+    open: 'Open music',
+    notConnected: 'Connect a Spotify account in the settings to see what’s playing.',
+    nothingPlaying: 'Nothing playing',
+    pickSomething: 'Pick a playlist, or a device to play on.',
+    ad: 'Advertisement',
+    onDevice: 'On {{ name }}',
+    play: 'Play',
+    pause: 'Pause',
+    next: 'Next',
+    previous: 'Previous',
+    quieter: 'Quieter',
+    louder: 'Louder',
+    volume: 'Volume',
+    devices: 'Play on',
+    noDevices: 'Open Spotify on a phone, computer or speaker to play from here.',
+    playlists: 'Playlists',
+    noPlaylists: 'No playlists yet.',
+    failed: 'Spotify couldn’t do that. Try again.',
+  },
   maintenance: {
     title: 'Under maintenance',
     body: 'HomeViewer can’t reach its server right now. It will come back by itself once the server is running again.',
@@ -168,6 +190,12 @@ export const en = {
     shortcuts: 'Scene shortcuts',
     shortcutsHelp:
       'Hue scenes to show as buttons next to the lights on the home screen, in the order you tick them.',
+    spotify: 'Spotify',
+    spotifyHelp:
+      'Shows what’s playing, with controls and your playlists. Spotify sends you back to this computer after you log in, so connect from the server itself, at http://127.0.0.1:5000/admin.',
+    spotifyConnect: 'Connect Spotify',
+    spotifyConnected: 'Connected.',
+    spotifyDisconnect: 'Disconnect',
     save: 'Save',
     saving: 'Saving…',
     saved: 'Saved',
@@ -187,6 +215,9 @@ export const en = {
     imageSize: 'Images can be at most {{ megabytes }} MB.',
     imageUnreadable: 'The browser can’t read this image.',
     imageResize: 'The browser can’t resize images.',
+    spotifyNoDevice: 'Open Spotify on a phone, computer or speaker first.',
+    spotifyRefused: 'Spotify can’t do that right now.',
+    spotifyNotConnected: 'Connect a Spotify account in the settings first.',
   },
 };
 

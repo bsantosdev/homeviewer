@@ -54,6 +54,12 @@
           <app-lights class="min-h-0 flex-1" />
         </section>
       }
+      @case ('music') {
+        <section class="card flex min-h-0 flex-1 flex-col">
+          <h2 class="card-title">{{ 'music.title' | transloco }}</h2>
+          <app-music class="min-h-0 flex-1" [now]="now()" />
+        </section>
+      }
       @case ('shopping') {
         <section class="card flex min-h-0 flex-1 flex-col">
           <h2 class="card-title">{{ 'shopping.title' | transloco }}</h2>
@@ -90,6 +96,44 @@
               <div class="date text-vh-3.5 opacity-80 first-letter:uppercase">
                 {{ now() | date: ('dates.long' | transloco) : undefined : language() }}
               </div>
+              @if (nowPlaying(); as p) {
+                <div class="now-playing mt-[2.5vh] flex items-center">
+                  <button
+                    type="button"
+                    class="flex min-w-0 flex-1 items-center text-left [-webkit-tap-highlight-color:transparent]"
+                    [attr.aria-label]="'music.open' | transloco"
+                    (click)="show('music')"
+                  >
+                    <span
+                      class="h-[7vh] w-[7vh] shrink-0 overflow-hidden rounded-[1vh] bg-neutral-500/20"
+                    >
+                      @if (p.item.image) {
+                        <img class="block h-full w-full object-cover" [src]="p.item.image" alt="" />
+                      }
+                    </span>
+                    <span class="ml-[1.5vh] min-w-0">
+                      <span class="now-playing-title block truncate text-vh-2.5 font-medium">{{
+                        p.item.name
+                      }}</span>
+                      <span class="now-playing-by block truncate text-[2.2vh] opacity-70">{{
+                        p.item.by
+                      }}</span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    class="now-playing-toggle ml-[1.5vh] h-[6vh] w-[6vh] shrink-0 rounded-full bg-neutral-500/20 p-[1.6vh] [-webkit-tap-highlight-color:transparent]"
+                    [attr.aria-label]="(p.isPlaying ? 'music.pause' : 'music.play') | transloco"
+                    (click)="p.isPlaying ? spotify.pause() : spotify.play()"
+                  >
+                    <hugeicons-icon
+                      class="block h-full w-full"
+                      [icon]="p.isPlaying ? pauseIcon : playIcon"
+                      [strokeWidth]="2"
+                    />
+                  </button>
+                </div>
+              }
             </div>
 
             @if (weather(); as w) {
