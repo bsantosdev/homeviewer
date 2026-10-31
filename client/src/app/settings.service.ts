@@ -25,6 +25,8 @@ export interface DashboardSettings {
   nightEnd: string;
   /** Hue scene ids offered as one-tap buttons next to the lights. */
   sceneShortcuts: string[];
+  /** Hue room ids the home screen lists with a switch; with none picked, it lists every room. */
+  homeRooms: string[];
   /** What every screen shows its texts and dates in. */
   language: Language;
 }

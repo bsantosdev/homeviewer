@@ -1,5 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, effect, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -7,6 +15,7 @@ import { BackgroundsService, backgroundUrl } from '../backgrounds';
 import { LANGUAGES, LANGUAGE_NAMES, Text, TextError, TextPipe, isApiError } from '../i18n';
 import { en } from '../i18n/en';
 import { LightsService, RoomScene } from '../lights.service';
+import { Choice, MultiSelect } from '../multi-select/multi-select';
 import { DashboardSettings, SettingsService } from '../settings.service';
 import { SpotifyService } from '../spotify.service';
 
@@ -15,7 +24,7 @@ export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b
 
 @Component({
   selector: 'app-admin',
-  imports: [FormsModule, RouterLink, TextPipe, TranslocoPipe],
+  imports: [FormsModule, MultiSelect, RouterLink, TextPipe, TranslocoPipe],
   templateUrl: './admin.html',
   styleUrl: './admin.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -25,7 +34,7 @@ export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b
     '[class.dark]': 'isDark()',
   },
 })
-export class Admin {
+export class Admin implements OnInit {
   private readonly service = inject(SettingsService);
   private readonly backgrounds = inject(BackgroundsService);
   protected readonly backgroundUrl = backgroundUrl;
@@ -34,8 +43,16 @@ export class Admin {
   protected readonly languageNames = LANGUAGE_NAMES;
   protected readonly form = signal<DashboardSettings | null>(null);
   protected readonly status = signal<Text | null>(null);
-  /** Every room's Hue scenes to pick shortcuts from; empty while there's no bridge. */
-  protected readonly scenes = signal<RoomScene[]>([]);
+  private readonly lights = inject(LightsService);
+  /** The Hue rooms to pick for the home screen; none while there's no bridge. */
+  protected readonly roomChoices = computed<Choice[]>(() =>
+    (this.lights.rooms() ?? []).map((room) => ({ value: room.id, label: room.name })),
+  );
+  /** Every room's Hue scenes to pick shortcuts from, under their room; none while there's no bridge. */
+  private readonly scenes = signal<RoomScene[]>([]);
+  protected readonly sceneChoices = computed<Choice[]>(() =>
+    this.scenes().map((scene) => ({ value: scene.id, label: scene.name, group: scene.room })),
+  );
   /** Its section only shows once the server says Spotify is set up. */
   protected readonly spotify = inject(SpotifyService);
 
@@ -49,15 +66,15 @@ export class Admin {
           calendars: s.calendars.map((c) => ({ ...c })),
           backgrounds: [...s.backgrounds],
           sceneShortcuts: [...s.sceneShortcuts],
+          homeRooms: [...s.homeRooms],
         });
     });
-    void this.loadScenes(inject(LightsService));
-    void this.spotify.load();
   }
 
-  protected toggleShortcut(form: DashboardSettings, id: string, on: boolean): void {
-    const others = form.sceneShortcuts.filter((s) => s !== id);
-    this.form.set({ ...form, sceneShortcuts: on ? [...others, id] : others });
+  ngOnInit(): void {
+    void this.lights.load();
+    void this.loadScenes();
+    void this.spotify.load();
   }
 
   protected addCalendar(form: DashboardSettings): void {
@@ -102,9 +119,9 @@ export class Admin {
     this.form.set({ ...form, backgrounds: form.backgrounds.filter((b) => b !== name) });
   }
 
-  private async loadScenes(lights: LightsService): Promise<void> {
+  private async loadScenes(): Promise<void> {
     try {
-      this.scenes.set(await lights.allScenes());
+      this.scenes.set(await this.lights.allScenes());
     } catch {
       // No bridge is set up, or it isn't answering: there's nothing to pick from.
     }

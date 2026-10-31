@@ -177,23 +177,34 @@
           </label>
         </div>
       </fieldset>
-      @if (scenes().length) {
-        <fieldset class="mb-5">
-          <legend class="mb-1">{{ 'admin.shortcuts' | transloco }}</legend>
-          <p class="mb-2 text-sm opacity-70">
-            {{ 'admin.shortcutsHelp' | transloco }}
-          </p>
-          @for (scene of scenes(); track scene.id) {
-            <label class="mb-1.5 flex items-center">
-              <input
-                #box
-                class="mr-2"
-                type="checkbox"
-                [checked]="f.sceneShortcuts.includes(scene.id)"
-                (change)="toggleShortcut(f, scene.id, box.checked)"
+      @if (roomChoices().length || sceneChoices().length) {
+        <fieldset class="home-lights mb-5">
+          <legend class="mb-1">{{ 'admin.homeLights' | transloco }}</legend>
+          @if (roomChoices().length) {
+            <div class="mb-3.5">
+              {{ 'admin.homeRooms' | transloco }}
+              <p class="mb-0 mt-0.5 text-sm opacity-70">{{ 'admin.homeRoomsHelp' | transloco }}</p>
+              <app-multi-select
+                class="home-rooms"
+                [choices]="roomChoices()"
+                [(selected)]="f.homeRooms"
+                [label]="'admin.homeRooms' | transloco"
+                [placeholder]="'admin.allRooms' | transloco"
               />
-              {{ scene.room }} · {{ scene.name }}
-            </label>
+            </div>
+          }
+          @if (sceneChoices().length) {
+            <div>
+              {{ 'admin.shortcuts' | transloco }}
+              <p class="mb-0 mt-0.5 text-sm opacity-70">{{ 'admin.shortcutsHelp' | transloco }}</p>
+              <app-multi-select
+                class="scene-shortcuts"
+                [choices]="sceneChoices()"
+                [(selected)]="f.sceneShortcuts"
+                [label]="'admin.shortcuts' | transloco"
+                [placeholder]="'admin.noShortcuts' | transloco"
+              />
+            </div>
           }
         </fieldset>
       }

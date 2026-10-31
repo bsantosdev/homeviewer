@@ -14,7 +14,8 @@ import { DEFAULT_COLOR, roomStatus } from './room-tile';
 
 /**
  * The dashboard's lights widget: the scene shortcuts picked in the admin page, a button to turn
- * everything off, and every room with a switch. The full controls are on the Lights page.
+ * everything off, and the rooms picked there (or every room) with a switch. The full controls are
+ * on the Lights page.
  */
 @Component({
   selector: 'app-lights-summary',
@@ -27,8 +28,22 @@ export class LightsSummary {
   protected readonly service = inject(LightsService);
   private readonly settings = inject(SettingsService).settings;
   protected readonly defaultColor = DEFAULT_COLOR;
-  protected readonly rooms = computed(() => this.service.rooms() ?? []);
-  protected readonly onCount = computed(() => this.rooms().filter((room) => room.on).length);
+  /**
+   * The rooms picked in the admin page, in the order they were picked. With none picked, or none
+   * left in the Hue app, every room.
+   */
+  protected readonly rooms = computed(() => {
+    const rooms = this.service.rooms() ?? [];
+    const byId = new Map(rooms.map((room) => [room.id, room]));
+    const picked = (this.settings()?.homeRooms ?? [])
+      .map((id) => byId.get(id))
+      .filter((room) => room !== undefined);
+    return picked.length ? picked : rooms;
+  });
+  /** The whole house, like "All off", not just the rooms listed. */
+  protected readonly onCount = computed(
+    () => (this.service.rooms() ?? []).filter((room) => room.on).length,
+  );
   private readonly scenes = signal<RoomScene[]>([]);
   /** In the order they were picked; scenes since deleted in the Hue app are left out. */
   protected readonly shortcuts = computed(() => {

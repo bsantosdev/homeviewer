@@ -53,14 +53,22 @@ describe('LightsSummary', () => {
   let el: HTMLElement;
   let http: HttpTestingController;
 
-  async function show(rooms: Room[] | null, sceneShortcuts: string[] = []): Promise<void> {
+  async function show(
+    rooms: Room[] | null,
+    sceneShortcuts: string[] = [],
+    homeRooms: string[] = [],
+  ): Promise<void> {
     TestBed.configureTestingModule({ providers: provideTestBackend() });
     http = TestBed.inject(HttpTestingController);
     TestBed.inject(LightsService).rooms.set(rooms);
     fixture = TestBed.createComponent(LightsSummary);
     el = fixture.nativeElement as HTMLElement;
-    http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, sceneShortcuts });
+    http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, sceneShortcuts, homeRooms });
     await fixture.whenStable();
+  }
+
+  function names(): string[] {
+    return Array.from(el.querySelectorAll('.room'), (r) => text(r, '.name'));
   }
 
   function shortcuts(): string[] {
@@ -100,6 +108,23 @@ describe('LightsSummary', () => {
 
     expect(query(row('Living room'), '.switch').getAttribute('aria-checked')).toBe('true');
     expect(query(row('Bedroom'), '.switch').getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('lists only the rooms picked, in the order picked, still counting the whole house', async () => {
+    // Act
+    await show([LIVING, BEDROOM, PORCH], [], ['porch-id', 'gone-id', 'bedroom-id']);
+
+    // Assert
+    expect(names()).toEqual(['Porch', 'Bedroom']);
+    expect(text(el, '.on-count')).toBe('2 on');
+  });
+
+  it('lists every room once none of the picked ones are left', async () => {
+    // Act
+    await show([LIVING, BEDROOM], [], ['gone-id']);
+
+    // Assert
+    expect(names()).toEqual(['Living room', 'Bedroom']);
   });
 
   it('switches a room', async () => {

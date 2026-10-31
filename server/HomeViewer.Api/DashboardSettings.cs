@@ -37,6 +37,9 @@ public record DashboardSettings(
     /// <summary>Hue scene ids the dashboard offers as one-tap buttons next to the lights.</summary>
     public IReadOnlyList<string> SceneShortcuts { get; init; } = [];
 
+    /// <summary>Hue room ids the home screen lists with a switch. With none picked, it lists every room.</summary>
+    public IReadOnlyList<string> HomeRooms { get; init; } = [];
+
     /// <summary>What every screen shows its texts and dates in: one of <see cref="Languages"/>.</summary>
     public string Language { get; init; } = "en";
 

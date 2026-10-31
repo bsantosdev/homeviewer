@@ -185,9 +185,15 @@ export const de: Messages = {
     nightToggle: 'Dashboard nachts abdunkeln',
     from: 'Von',
     until: 'Bis',
+    homeLights: 'Licht auf dem Startbildschirm',
+    homeRooms: 'Räume',
+    homeRoomsHelp:
+      'Räume, die mit einem Schalter erscheinen, in der Reihenfolge, in der du sie anhakst. Ohne Haken erscheinen alle Räume.',
+    allRooms: 'Alle Räume',
     shortcuts: 'Szenen-Verknüpfungen',
     shortcutsHelp:
       'Hue-Szenen, die auf dem Startbildschirm als Tasten neben dem Licht erscheinen, in der Reihenfolge, in der du sie anhakst.',
+    noShortcuts: 'Keine',
     spotify: 'Spotify',
     spotifyHelp:
       'Zeigt, was läuft, mit Steuerung und deinen Playlists. Spotify schickt dich nach der Anmeldung zu diesem Computer zurück, also verbinde direkt am Server, unter http://127.0.0.1:5000/admin.',
