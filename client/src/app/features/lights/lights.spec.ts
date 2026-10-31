@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Lights } from './lights';
 import { LightsService, Room, Scene } from './data-access/lights.service';
-import { DEFAULT_KELVIN, SWATCHES } from './ui/room-sheet';
+import { DEFAULT_KELVIN, SWATCHES } from './room-sheet';
 import { DEFAULT_COLOR } from './ui/room-tile';
 import { button, provideTestBackend, query, text } from '../../../testing/test-helpers';
 

@@ -95,7 +95,7 @@ To add things from a phone, open `/list` on it, for example `http://<server>:507
 
 In `/admin`, pick **Language** and save. Every open screen switches straight away, the `/list` page on phones included. The choices are English (the default), Português (Brasil) and Deutsch, and dates follow the language too.
 
-The texts live in `client/src/app/i18n/`, one file per language, and use [Transloco](https://jsverse.gitbook.io/transloco). English (`en.ts`) is the reference: a missing or extra key in another language fails the build, and a test checks that every translation fills in the same `{{ values }}`. To add a language, copy `en.ts`, translate it, and add it to `LANGUAGES` in `client/src/app/i18n.ts` and to `DashboardSettings.Languages` on the server. If Angular has no date data for it yet, register that with `registerLocaleData` in the same file.
+The texts live in `client/src/app/core/i18n/`, one file per language, and use [Transloco](https://jsverse.gitbook.io/transloco). English (`en.ts`) is the reference: a missing or extra key in another language fails the build, and a test checks that every translation fills in the same `{{ values }}`. To add a language, copy `en.ts`, translate it, and add it to `LANGUAGES` in `client/src/app/core/i18n.ts` and to `DashboardSettings.Languages` on the server. If Angular has no date data for it yet, register that with `registerLocaleData` in the same file.
 
 ## Night mode
 

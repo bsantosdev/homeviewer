@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output, resource } f
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { LightsService, MAX_KELVIN, MIN_KELVIN, Room, Scene } from '../data-access/lights.service';
+import { LightsService, MAX_KELVIN, MIN_KELVIN, Room, Scene } from './data-access/lights.service';
 
 /** Colours a room can be set to with one tap, for rooms with colour lights, named by translation key. */
 export const SWATCHES = [

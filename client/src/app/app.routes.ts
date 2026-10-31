@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { Admin } from './features/admin/admin';
+import { Admin } from './admin/admin';
 import { Dashboard } from './dashboard/dashboard';
 import { ShoppingPage } from './features/shopping/shopping-page';
 

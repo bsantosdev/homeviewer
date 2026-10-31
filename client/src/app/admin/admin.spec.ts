@@ -1,17 +1,11 @@
 import { HttpTestingController } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import {
-  TEST_SETTINGS,
-  button,
-  provideTestBackend,
-  query,
-  text,
-} from '../../../testing/test-helpers';
-import { IMAGE_SHRINKER } from '../backgrounds/data-access/backgrounds';
-import { TextError } from '../../core/i18n';
-import { DashboardSettings, SettingsService } from '../../core/settings.service';
-import { SpotifyStatus } from '../music/data-access/spotify.service';
+import { TEST_SETTINGS, button, provideTestBackend, query, text } from '../../testing/test-helpers';
+import { IMAGE_SHRINKER } from '../features/backgrounds/data-access/backgrounds';
+import { TextError } from '../core/i18n';
+import { DashboardSettings, SettingsService } from '../core/settings.service';
+import { SpotifyStatus } from '../features/music/data-access/spotify.service';
 import { Admin, CALENDAR_COLORS } from './admin';
 
 describe('Admin', () => {

@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { LightsService } from './data-access/lights.service';
-import { RoomSheet } from './ui/room-sheet';
+import { RoomSheet } from './room-sheet';
 import { RoomTile } from './ui/room-tile';
 
 /**

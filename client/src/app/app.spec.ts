@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
 import { routes } from './app.routes';
-import { Admin } from './features/admin/admin';
+import { Admin } from './admin/admin';
 import { Dashboard } from './dashboard/dashboard';
 import { WeatherService } from './features/weather/data-access/weather.service';
 import { TEST_SETTINGS, provideTestBackend } from '../testing/test-helpers';
