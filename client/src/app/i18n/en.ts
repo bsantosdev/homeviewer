@@ -187,9 +187,15 @@ export const en = {
     nightToggle: 'Dim the dashboard at night',
     from: 'From',
     until: 'Until',
+    homeLights: 'Lights on the home screen',
+    homeRooms: 'Rooms',
+    homeRoomsHelp:
+      'Rooms to list with a switch, in the order you tick them. With none ticked, every room is listed.',
+    allRooms: 'Every room',
     shortcuts: 'Scene shortcuts',
     shortcutsHelp:
       'Hue scenes to show as buttons next to the lights on the home screen, in the order you tick them.',
+    noShortcuts: 'None',
     spotify: 'Spotify',
     spotifyHelp:
       'Shows what’s playing, with controls and your playlists. Spotify sends you back to this computer after you log in, so connect from the server itself, at http://127.0.0.1:5000/admin.',

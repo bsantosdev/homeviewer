@@ -268,49 +268,93 @@ describe('Admin', () => {
     });
   });
 
-  describe('scene shortcuts', () => {
+  describe('lights on the home screen', () => {
+    const room = (id: string, name: string) => ({
+      id,
+      name,
+      on: false,
+      brightness: 0,
+      colors: [],
+      temperature: null,
+      canColor: false,
+    });
+    const ROOMS = [room('kitchen-id', 'Kitchen'), room('living-id', 'Living room')];
     const SCENES = [
       { id: 'read-id', name: 'Read', room: 'Kitchen', colors: [] },
       { id: 'relax-id', name: 'Relax', room: 'Living room', colors: [] },
     ];
+    const NO_BRIDGE = { status: 503, statusText: 'Service Unavailable' };
 
-    function box(label: string): HTMLInputElement {
-      const match = Array.from(el.querySelectorAll('label')).find(
-        (l) => l.textContent.trim() === label,
-      );
-      if (!match) throw new Error(`No label "${label}"`);
-      return query(match, 'input', HTMLInputElement);
+    async function hue(rooms: object[] | null, scenes: object[] | null): Promise<void> {
+      http.expectOne('/api/rooms').flush(rooms ?? 'No bridge', rooms ? {} : NO_BRIDGE);
+      http.expectOne('/api/scenes').flush(scenes ?? 'No bridge', scenes ? {} : NO_BRIDGE);
+      await settle();
     }
 
-    it('picks scenes in the order they are ticked', async () => {
-      await loadSettings();
-      http.expectOne('/api/scenes').flush(SCENES);
-      await settle();
+    async function tick(field: string, label: string): Promise<void> {
+      if (!el.querySelector(`${field} .choices`)) query(el, `${field} .trigger`).click();
+      await fixture.whenStable();
+      const match = Array.from(el.querySelectorAll(`${field} .choice`)).find(
+        (l) => l.textContent.trim() === label,
+      );
+      if (!match) throw new Error(`No choice "${label}" in ${field}`);
+      query(match, 'input', HTMLInputElement).click();
+      await fixture.whenStable();
+    }
 
-      box('Living room · Relax').click();
-      await fixture.whenStable();
-      box('Kitchen · Read').click();
-      await fixture.whenStable();
-      box('Living room · Relax').click();
-      await fixture.whenStable();
-      box('Living room · Relax').click();
-      await fixture.whenStable();
-      expect(box('Kitchen · Read').checked).toBe(true);
+    it('saves the rooms and scenes picked, in the order they were ticked', async () => {
+      // Arrange
+      await loadSettings();
+      await hue(ROOMS, SCENES);
+
+      // Act
+      await tick('.home-rooms', 'Living room');
+      await tick('.home-rooms', 'Kitchen');
+      await tick('.scene-shortcuts', 'Relax');
+      await tick('.scene-shortcuts', 'Read');
       await submit();
 
+      // Assert
       const saved = http.expectOne({ method: 'PUT', url: '/api/settings' }).request
         .body as DashboardSettings;
-      expect(saved.sceneShortcuts).toEqual(['read-id', 'relax-id']);
+      expect(saved.homeRooms).toEqual(['living-id', 'kitchen-id']);
+      expect(saved.sceneShortcuts).toEqual(['relax-id', 'read-id']);
+      expect(TestBed.inject(SettingsService).settings()?.homeRooms).toEqual([]);
+    });
+
+    it('shows what is picked, or that every room is listed', async () => {
+      // Arrange
+      http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, sceneShortcuts: ['read-id'] });
+
+      // Act
+      await hue(ROOMS, SCENES);
+
+      // Assert
+      expect(text(el, '.home-rooms .summary')).toBe('Every room');
+      expect(text(el, '.scene-shortcuts .summary')).toBe('Kitchen · Read');
+    });
+
+    it('offers just the rooms while the bridge has no scenes', async () => {
+      // Arrange
+      http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, homeRooms: ['living-id'] });
+
+      // Act
+      await hue(ROOMS, []);
+
+      // Assert
+      expect(text(el, '.home-rooms .summary')).toBe('Living room');
+      expect(el.querySelector('.scene-shortcuts')).toBeNull();
     });
 
     it('is hidden without a Hue bridge', async () => {
+      // Arrange
       await loadSettings();
-      http
-        .expectOne('/api/scenes')
-        .flush('No bridge', { status: 503, statusText: 'Service Unavailable' });
-      await settle();
 
-      expect(el.textContent).not.toContain('Scene shortcuts');
+      // Act
+      await hue(null, null);
+
+      // Assert
+      expect(el.querySelector('.home-lights')).toBeNull();
     });
   });
 

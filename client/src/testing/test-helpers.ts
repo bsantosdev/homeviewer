@@ -20,6 +20,7 @@ export const TEST_SETTINGS: DashboardSettings = {
   nightStart: '22:00',
   nightEnd: '07:00',
   sceneShortcuts: [],
+  homeRooms: [],
   language: 'en',
 };
 

@@ -114,6 +114,20 @@ public sealed class ApiTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Put_saves_the_rooms_for_the_home_screen()
+    {
+        // Arrange
+        var updated = DashboardSettings.Default with { HomeRooms = ["room-2", "room-1"] };
+
+        // Act
+        (await _client.PutAsJsonAsync("/api/settings", updated)).EnsureSuccessStatusCode();
+        var settings = await _client.GetFromJsonAsync<DashboardSettings>("/api/settings");
+
+        // Assert
+        Assert.Equal(["room-2", "room-1"], settings!.HomeRooms);
+    }
+
+    [Fact]
     public async Task Put_saves_the_calendars()
     {
         var updated = DashboardSettings.Default with { Calendars = [new("Family", "webcal://outlook.example/a.ics")] };

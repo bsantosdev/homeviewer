@@ -184,9 +184,15 @@ export const ptBR: Messages = {
     nightToggle: 'Escurecer o painel à noite',
     from: 'De',
     until: 'Até',
+    homeLights: 'Luzes na tela inicial',
+    homeRooms: 'Cômodos',
+    homeRoomsHelp:
+      'Cômodos que aparecem com um interruptor, na ordem em que você os marcar. Sem nenhum marcado, aparecem todos.',
+    allRooms: 'Todos os cômodos',
     shortcuts: 'Atalhos de cenas',
     shortcutsHelp:
       'Cenas da Hue que aparecem como botões ao lado das luzes na tela inicial, na ordem em que você as marcar.',
+    noShortcuts: 'Nenhum',
     spotify: 'Spotify',
     spotifyHelp:
       'Mostra o que está tocando, com controles e suas playlists. Depois do login, o Spotify volta para este computador, então conecte pelo próprio servidor, em http://127.0.0.1:5000/admin.',
