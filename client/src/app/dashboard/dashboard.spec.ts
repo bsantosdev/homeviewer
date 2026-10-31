@@ -2,12 +2,16 @@ import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Dashboard, EVENTS_REFRESH_MS, LIGHTS_REFRESH_MS, WEATHER_REFRESH_MS } from './dashboard';
-import { CalendarEvent, CalendarService } from '../calendar.service';
-import { LightsService, Room } from '../lights.service';
-import { SettingsService } from '../settings.service';
-import { MUSIC_REFRESH_MS, SpotifyService, SpotifyStatus } from '../spotify.service';
-import { Weather, WeatherService } from '../weather.service';
-import { WAKE_MS } from '../night';
+import { CalendarEvent, CalendarService } from '../features/agenda/data-access/calendar.service';
+import { LightsService, Room } from '../features/lights/data-access/lights.service';
+import { SettingsService } from '../core/settings.service';
+import {
+  MUSIC_REFRESH_MS,
+  SpotifyService,
+  SpotifyStatus,
+} from '../features/music/data-access/spotify.service';
+import { Weather, WeatherService } from '../features/weather/data-access/weather.service';
+import { WAKE_MS } from '../core/night';
 import {
   PLAYING,
   SONG,

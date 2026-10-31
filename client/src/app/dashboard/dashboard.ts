@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { TextPipe } from '../i18n';
+import { TextPipe } from '../core/i18n';
 import {
   BulbIcon,
   Home09Icon,
@@ -24,21 +24,21 @@ import {
   SunglassesIcon,
   UmbrellaIcon,
 } from '@hugeicons/core-free-icons';
-import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
-import { Background } from '../background/background';
-import { CalendarEvent, CalendarService } from '../calendar.service';
-import { LightsService } from '../lights.service';
-import { Lights } from '../lights/lights';
-import { LightsSummary } from '../lights/lights-summary';
-import { Music } from '../music/music';
-import { WAKE_MS, isNight } from '../night';
-import { SettingsService } from '../settings.service';
-import { ShoppingService } from '../shopping.service';
-import { MUSIC_REFRESH_MS, SpotifyService } from '../spotify.service';
-import { ShoppingList } from '../shopping/shopping-list';
-import { Timer } from '../timer/timer';
-import { weatherIconFor } from '../weather-icons';
-import { Weather, WeatherService } from '../weather.service';
+import { AGENDA_DAYS, agenda, startOfDay } from '../features/agenda/agenda';
+import { Background } from '../features/backgrounds/background/background';
+import { CalendarEvent, CalendarService } from '../features/agenda/data-access/calendar.service';
+import { LightsService } from '../features/lights/data-access/lights.service';
+import { Lights } from '../features/lights/lights';
+import { LightsSummary } from '../features/lights/lights-summary';
+import { Music } from '../features/music/music';
+import { WAKE_MS, isNight } from '../core/night';
+import { SettingsService } from '../core/settings.service';
+import { ShoppingService } from '../features/shopping/data-access/shopping.service';
+import { MUSIC_REFRESH_MS, SpotifyService } from '../features/music/data-access/spotify.service';
+import { ShoppingList } from '../features/shopping/shopping-list';
+import { Timer } from '../features/timer/timer';
+import { weatherIconFor } from '../features/weather/weather-icons';
+import { Weather, WeatherService } from '../features/weather/data-access/weather.service';
 
 export const WEATHER_REFRESH_MS = 1 * 60 * 1000;
 export const EVENTS_REFRESH_MS = 1 * 60 * 1000;

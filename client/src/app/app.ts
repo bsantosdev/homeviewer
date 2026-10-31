@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { Maintenance } from './maintenance/maintenance';
+import { Maintenance } from './features/maintenance/maintenance';
 
 @Component({
   selector: 'app-root',
