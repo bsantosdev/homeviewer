@@ -325,6 +325,7 @@ describe('Admin', () => {
     it('shows what is picked, or that every room is listed', async () => {
       // Arrange
       http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, sceneShortcuts: ['read-id'] });
+      await fixture.whenStable();
 
       // Act
       await hue(ROOMS, SCENES);
@@ -337,6 +338,7 @@ describe('Admin', () => {
     it('offers just the rooms while the bridge has no scenes', async () => {
       // Arrange
       http.expectOne('/api/settings').flush({ ...TEST_SETTINGS, homeRooms: ['living-id'] });
+      await fixture.whenStable();
 
       // Act
       await hue(ROOMS, []);

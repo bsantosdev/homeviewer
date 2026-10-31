@@ -2,6 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import {
   ChangeDetectionStrategy,
   Component,
+  OnInit,
   computed,
   effect,
   inject,
@@ -33,7 +34,7 @@ export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b
     '[class.dark]': 'isDark()',
   },
 })
-export class Admin {
+export class Admin implements OnInit {
   private readonly service = inject(SettingsService);
   private readonly backgrounds = inject(BackgroundsService);
   protected readonly backgroundUrl = backgroundUrl;
@@ -68,6 +69,9 @@ export class Admin {
           homeRooms: [...s.homeRooms],
         });
     });
+  }
+
+  ngOnInit(): void {
     void this.lights.load();
     void this.loadScenes();
     void this.spotify.load();
