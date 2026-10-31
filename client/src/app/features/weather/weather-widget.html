@@ -1,0 +1,87 @@
+@if (weather(); as w) {
+  <section class="weather card flex min-h-0 flex-1 flex-col justify-between">
+    <div class="flex items-center">
+      @if (weatherIconFor(w.condition, w.isDay); as icon) {
+        <span
+          class="weather-icon mr-[2vh] inline-block h-[8vh] w-[8vh] shrink-0"
+          aria-hidden="true"
+        >
+          <hugeicons-icon class="block h-full w-full" [icon]="icon" [strokeWidth]="1.5" />
+        </span>
+      }
+      <span class="weather-temp mr-[2vh] text-[8vh] font-light leading-none"
+        >{{ w.temperature }}°</span
+      >
+      <span class="min-w-0 text-vh-2.5">
+        <span class="weather-summary block truncate">{{
+          w.description ? (w.description | transloco) : ''
+        }}</span>
+        <span class="block truncate opacity-70">
+          <span class="weather-range" [attr.aria-label]="'dashboard.todaysRange' | transloco"
+            >↓{{ w.min }}° ↑{{ w.max }}°</span
+          >
+          · <span class="weather-place">{{ settings()?.locationName }}</span>
+        </span>
+      </span>
+    </div>
+    @if (w.uv || w.air) {
+      <p class="m-0 mt-[1.5vh] flex items-center text-vh-2.5 opacity-80">
+        @if (w.uv; as uv) {
+          <span class="weather-uv mr-[3vh] flex items-center">
+            <hugeicons-icon
+              class="mr-[1vh] block h-[3vh] w-[3vh] shrink-0"
+              [icon]="uvIcon"
+              [strokeWidth]="2"
+            />
+            {{ 'weather.uv' | transloco: { value: uv.value, level: (uv.level | transloco) } }}
+          </span>
+        }
+        @if (w.air; as air) {
+          <span class="weather-air flex items-center">
+            <hugeicons-icon
+              class="mr-[1vh] block h-[3vh] w-[3vh] shrink-0"
+              [icon]="airIcon"
+              [strokeWidth]="2"
+            />
+            {{ 'weather.air' | transloco: { level: (air.level | transloco) } }}
+          </span>
+        }
+      </p>
+    }
+    @if (w.rain) {
+      <p class="weather-rain m-0 mt-[1.5vh] flex items-center text-vh-2.5 font-medium">
+        <hugeicons-icon
+          class="mr-[1vh] block h-[3vh] w-[3vh] shrink-0"
+          [icon]="umbrellaIcon"
+          [strokeWidth]="2"
+        />
+        {{ w.rain | text }}
+      </p>
+    }
+    @if (w.days.length) {
+      <div
+        class="mt-[1.5vh] flex border-0 border-t border-solid border-black/10 pt-[1.5vh] dark:border-white/15"
+      >
+        @for (day of w.days; track day.date.getTime()) {
+          <div class="weather-day min-w-0 flex-1 text-center text-vh-2.5">
+            <div class="opacity-70 first-letter:uppercase">
+              {{ day.date | date: ('dates.weekday' | transloco) : undefined : language() }}
+            </div>
+            @if (weatherIconFor(day.condition, true); as icon) {
+              <hugeicons-icon
+                class="mx-auto my-[1vh] block h-[5vh] w-[5vh]"
+                [icon]="icon"
+                [strokeWidth]="1.5"
+              />
+            } @else {
+              <div class="h-[7vh]"></div>
+            }
+            <div class="tabular-nums">
+              {{ day.max }}° <span class="opacity-60">{{ day.min }}°</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+}

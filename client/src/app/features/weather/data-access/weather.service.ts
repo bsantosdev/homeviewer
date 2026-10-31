@@ -1,5 +1,5 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { Text } from '../../../core/i18n';
 
@@ -132,6 +132,16 @@ export const AIR_QUALITY_URL = 'https://air-quality-api.open-meteo.com/v1/air-qu
 @Injectable({ providedIn: 'root' })
 export class WeatherService {
   private readonly http = inject(HttpClient);
+  /** Null until the first fetch succeeds. A failed refresh keeps the last weather. */
+  readonly weather = signal<Weather | null>(null);
+
+  async load(latitude: number, longitude: number): Promise<void> {
+    try {
+      this.weather.set(await this.current(latitude, longitude));
+    } catch (err: unknown) {
+      console.error('Weather fetch failed', err);
+    }
+  }
 
   async current(latitude: number, longitude: number): Promise<Weather> {
     const [data, aqi] = await Promise.all([

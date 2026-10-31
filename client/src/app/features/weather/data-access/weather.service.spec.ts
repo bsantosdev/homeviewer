@@ -187,6 +187,36 @@ describe('WeatherService', () => {
     respondAir();
     expect(await weather).toMatchObject({ description: '', condition: 'unknown' });
   });
+
+  it('keeps the weather it loads', async () => {
+    // Act
+    const loading = service.load(38.72, -9.14);
+    respond(3);
+    respondAir();
+    await loading;
+
+    // Assert
+    expect(service.weather()).toMatchObject({ temperature: 14, condition: 'cloudy' });
+  });
+
+  it('logs failed loads and keeps the last weather', async () => {
+    // Arrange
+    const first = service.load(38.72, -9.14);
+    respond(3);
+    respondAir();
+    await first;
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    // Act
+    const second = service.load(38.72, -9.14);
+    http.expectOne((r) => r.url === OPEN_METEO_URL).error(new ProgressEvent('offline'));
+    respondAir();
+    await second;
+
+    // Assert
+    expect(log).toHaveBeenCalledWith('Weather fetch failed', expect.anything());
+    expect(service.weather()).toMatchObject({ temperature: 14 });
+  });
 });
 
 describe('rainNote', () => {

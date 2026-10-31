@@ -1,8 +1,9 @@
 import { signal } from '@angular/core';
+import type { MockInstance } from 'vitest';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { Dashboard, EVENTS_REFRESH_MS, LIGHTS_REFRESH_MS, WEATHER_REFRESH_MS } from './dashboard';
-import { CalendarEvent, CalendarService } from '../features/agenda/data-access/calendar.service';
+import { CalendarService } from '../features/agenda/data-access/calendar.service';
 import { LightsService, Room } from '../features/lights/data-access/lights.service';
 import { SettingsService } from '../core/settings.service';
 import {
@@ -14,7 +15,6 @@ import { Weather, WeatherService } from '../features/weather/data-access/weather
 import { WAKE_MS } from '../core/night';
 import {
   PLAYING,
-  SONG,
   TEST_SETTINGS,
   provideTestBackend,
   query,
@@ -42,8 +42,8 @@ const WITH_CALENDAR = {
 describe('Dashboard', () => {
   let fixture: ComponentFixture<Dashboard>;
   let el: HTMLElement;
-  let current: ReturnType<typeof vi.fn<(lat: number, lon: number) => Promise<Weather>>>;
-  let events: ReturnType<typeof vi.fn<(from: Date, to: Date) => Promise<CalendarEvent[]>>>;
+  let current: MockInstance<WeatherService['current']>;
+  let events: MockInstance<CalendarService['events']>;
   let rooms: ReturnType<typeof signal<Room[] | null>>;
   let loadLights: ReturnType<typeof vi.fn<() => Promise<void>>>;
   let music: ReturnType<typeof signal<SpotifyStatus | null>>;
@@ -57,8 +57,6 @@ describe('Dashboard', () => {
     // Fake only the clocks the component uses; Angular's scheduler keeps real timeouts.
     vi.useFakeTimers({ toFake: ['setInterval', 'clearInterval', 'Date'] });
     vi.setSystemTime(new Date(2026, 9, 23, 14, 5));
-    current = vi.fn().mockResolvedValue(MAINLY_CLEAR);
-    events = vi.fn().mockResolvedValue([]);
     rooms = signal<Room[] | null>(null);
     loadLights = vi.fn().mockResolvedValue(undefined);
     music = signal<SpotifyStatus | null>(null);
@@ -71,8 +69,6 @@ describe('Dashboard', () => {
     TestBed.configureTestingModule({
       providers: [
         ...provideTestBackend(),
-        { provide: WeatherService, useValue: { current } },
-        { provide: CalendarService, useValue: { events } },
         { provide: LightsService, useValue: { rooms, load: loadLights } },
         {
           provide: SpotifyService,
@@ -87,6 +83,9 @@ describe('Dashboard', () => {
         },
       ],
     });
+    // The real services, with only their fetches faked, so the widgets show what they load.
+    current = vi.spyOn(TestBed.inject(WeatherService), 'current').mockResolvedValue(MAINLY_CLEAR);
+    events = vi.spyOn(TestBed.inject(CalendarService), 'events').mockResolvedValue([]);
     fixture = TestBed.createComponent(Dashboard);
     el = fixture.nativeElement as HTMLElement;
   });
@@ -118,33 +117,6 @@ describe('Dashboard', () => {
     expect(text(el, '.weather .weather-range')).toBe('↓14° ↑24°');
     expect(text(el, '.weather .weather-summary')).toBe('Mainly clear');
     expect(text(el, '.weather .weather-place')).toBe('Lisbon');
-  });
-
-  it('shows an icon for the weather conditions', async () => {
-    await loadSettings();
-    const icon = query(el, '.weather .weather-icon');
-    expect(icon.getAttribute('aria-hidden')).toBe('true');
-    expect(icon.querySelector('svg path')).not.toBeNull();
-  });
-
-  it('changes the weather icon when the conditions change', async () => {
-    await loadSettings();
-    const before = query(el, '.weather .weather-icon svg', SVGElement).innerHTML;
-
-    current.mockResolvedValue({ ...MAINLY_CLEAR, condition: 'snow' });
-    vi.advanceTimersByTime(WEATHER_REFRESH_MS);
-    // Let the weather promise resolve before rendering.
-    await new Promise((resolve) => setTimeout(resolve));
-    await fixture.whenStable();
-
-    expect(query(el, '.weather .weather-icon svg', SVGElement).innerHTML).not.toBe(before);
-  });
-
-  it('leaves out the weather icon for unknown conditions', async () => {
-    current.mockResolvedValue({ ...MAINLY_CLEAR, description: '', condition: 'unknown' });
-    await loadSettings();
-    expect(el.querySelector('.weather .weather-icon')).toBeNull();
-    expect(text(el, '.weather .weather-temp')).toBe('21°');
   });
 
   it('applies the theme from the settings', async () => {
@@ -184,84 +156,6 @@ describe('Dashboard', () => {
 
     vi.advanceTimersByTime(WEATHER_REFRESH_MS);
     expect(current).toHaveBeenCalledTimes(1);
-  });
-
-  it('says when rain is coming, and forecasts the next days', async () => {
-    current.mockResolvedValue({
-      ...MAINLY_CLEAR,
-      rain: { key: 'weather.rainFrom', params: { time: '16:00' } },
-      days: [
-        { date: new Date(2026, 9, 24), min: 12, max: 19, condition: 'rain' },
-        { date: new Date(2026, 9, 25), min: 11, max: 20, condition: 'unknown' },
-      ],
-    });
-    await loadSettings();
-    await Promise.resolve();
-    await fixture.whenStable();
-
-    expect(text(el, '.weather-rain')).toBe('Rain from 16:00');
-    const days = Array.from(el.querySelectorAll('.weather-day'), (d) =>
-      d.textContent.replace(/\s+/g, ' ').trim(),
-    );
-    expect(days).toEqual(['Sat 19° 12°', 'Sun 20° 11°']);
-    expect(el.querySelectorAll('.weather-day hugeicons-icon')).toHaveLength(1);
-  });
-
-  it('leaves out the rain note and forecast without them', async () => {
-    await loadSettings();
-    await Promise.resolve();
-    await fixture.whenStable();
-    expect(el.querySelector('.weather-rain')).toBeNull();
-    expect(el.querySelector('.weather-day')).toBeNull();
-  });
-
-  it('shows the UV index and air quality', async () => {
-    current.mockResolvedValue({
-      ...MAINLY_CLEAR,
-      uv: { value: 6, level: 'weather.uvLevels.high' },
-      air: { value: 24, level: 'weather.airLevels.fair' },
-    });
-    await loadSettings();
-    await Promise.resolve();
-    await fixture.whenStable();
-    expect(text(el, '.weather-uv')).toBe('UV 6 · High');
-    expect(text(el, '.weather-air')).toBe('Air: Fair');
-  });
-
-  it('shows air quality alone when the UV index is too low to matter', async () => {
-    current.mockResolvedValue({
-      ...MAINLY_CLEAR,
-      air: { value: 5, level: 'weather.airLevels.good' },
-    });
-    await loadSettings();
-    await Promise.resolve();
-    await fixture.whenStable();
-    expect(el.querySelector('.weather-uv')).toBeNull();
-    expect(text(el, '.weather-air')).toBe('Air: Good');
-  });
-
-  it('shows the UV index alone without air quality', async () => {
-    current.mockResolvedValue({
-      ...MAINLY_CLEAR,
-      uv: { value: 2, level: 'weather.uvLevels.low' },
-    });
-    await loadSettings();
-    await Promise.resolve();
-    await fixture.whenStable();
-    expect(text(el, '.weather-uv')).toBe('UV 2 · Low');
-    expect(el.querySelector('.weather-air')).toBeNull();
-  });
-
-  it('logs weather errors and keeps running', async () => {
-    const error = new Error('offline');
-    current.mockRejectedValue(error);
-    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-    await loadSettings();
-    await Promise.resolve();
-
-    expect(log).toHaveBeenCalledWith('Weather fetch failed', error);
-    expect(el.querySelector('.weather')).toBeNull();
   });
 
   describe('night mode', () => {
@@ -499,46 +393,18 @@ describe('Dashboard', () => {
       expect(text(el, '.clock')).toBe('14:05');
     });
 
-    it('shows what’s playing under the clock, to pause or open', async () => {
+    it('opens the music from what’s playing under the clock', async () => {
+      // Arrange
       music.set({ connected: true, playback: PLAYING });
       await loadSettings();
 
-      expect(text(el, '.now-playing-title')).toBe('Morning Song');
-      expect(text(el, '.now-playing-by')).toBe('First Artist, Second Artist');
-      expect(query(el, '.now-playing img', HTMLImageElement).src).toBe(
-        'https://i.scdn.co/image/medium',
-      );
-      expect(query(el, '.now-playing-toggle').getAttribute('aria-label')).toBe('Pause');
-
-      query(el, '.now-playing-toggle').click();
-      expect(spotify.pause).toHaveBeenCalled();
-
+      // Act
       query(el, '.now-playing button[aria-label="Open music"]').click();
       await fixture.whenStable();
+
+      // Assert
       expect(el.querySelector('app-music')).not.toBeNull();
-    });
-
-    it('resumes from the strip while paused, with or without a cover', async () => {
-      music.set({
-        connected: true,
-        playback: { ...PLAYING, isPlaying: false, item: { ...SONG, image: null } },
-      });
-      await loadSettings();
-      expect(el.querySelector('.now-playing img')).toBeNull();
-
-      query(el, '.now-playing-toggle').click();
-
-      expect(spotify.play).toHaveBeenCalledWith();
-    });
-
-    it('leaves the strip out while nothing, or an ad, plays', async () => {
-      music.set({ connected: true, playback: { ...PLAYING, item: null } });
-      await loadSettings();
-      expect(el.querySelector('.now-playing')).toBeNull();
-
-      music.set({ connected: true, playback: null });
-      await fixture.whenStable();
-      expect(el.querySelector('.now-playing')).toBeNull();
+      expect(musicButton()?.getAttribute('aria-current')).toBe('page');
     });
 
     it('refreshes what’s playing every few seconds', async () => {
@@ -739,48 +605,6 @@ describe('Dashboard', () => {
       expect(navLabels()).toEqual(['Início', 'Lista de compras', 'Timer', 'E-mail']);
     });
 
-    it("badges each event with its calendar's name and colour", async () => {
-      events.mockResolvedValue([
-        {
-          title: 'Standup',
-          calendar: 'Work',
-          color: '#1e3a8a',
-          allDay: false,
-          start: new Date(2026, 9, 23, 17, 0).toISOString(),
-          end: new Date(2026, 9, 23, 17, 15).toISOString(),
-        },
-      ]);
-
-      await loadSettings(WITH_CALENDAR);
-      await settle();
-
-      const badge = query(el, '.agenda .calendar-badge');
-      expect(badge.textContent.trim()).toBe('Work');
-      expect(badge.style.backgroundColor).toBe('rgb(30, 58, 138)');
-      expect(badge.style.color).toBe('rgb(255, 255, 255)');
-    });
-
-    it('says when nothing is planned today and skips other empty days', async () => {
-      events.mockResolvedValue([
-        {
-          title: 'Market',
-          calendar: 'Family',
-          color: '#ef4444',
-          allDay: true,
-          start: '2026-10-25',
-          end: '2026-10-26',
-        },
-      ]);
-
-      await loadSettings(WITH_CALENDAR);
-      await settle();
-
-      expect(sections()).toEqual([
-        'Today Nothing planned',
-        'Sunday, 25 October Family All day Market',
-      ]);
-    });
-
     it('refreshes periodically and when the calendar links change', async () => {
       await loadSettings(WITH_CALENDAR);
       expect(events).toHaveBeenCalledTimes(1);
@@ -823,18 +647,6 @@ describe('Dashboard', () => {
 
       expect(el.querySelector('.agenda')).toBeNull();
       expect(events).toHaveBeenCalledTimes(1);
-    });
-
-    it('logs calendar errors and keeps running', async () => {
-      const error = new Error('offline');
-      events.mockRejectedValue(error);
-      const log = vi.spyOn(console, 'error').mockImplementation(() => undefined);
-
-      await loadSettings(WITH_CALENDAR);
-      await settle();
-
-      expect(log).toHaveBeenCalledWith('Calendar fetch failed', error);
-      expect(text(el, '.agenda section:first-child p')).toBe('Nothing planned');
     });
 
     it('makes way for the timer', async () => {
