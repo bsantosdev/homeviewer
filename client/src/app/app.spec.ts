@@ -6,7 +6,7 @@ import { App } from './app';
 import { routes } from './app.routes';
 import { Admin } from './admin/admin';
 import { Dashboard } from './dashboard/dashboard';
-import { WeatherService } from './weather.service';
+import { WeatherService } from './features/weather/data-access/weather.service';
 import { TEST_SETTINGS, provideTestBackend } from '../testing/test-helpers';
 
 describe('App', () => {

@@ -11,13 +11,22 @@ The main screen is an iPad mini 2 (A1489) that can't update past iOS 12.5.7, whi
 - **JS:** `npm run build` runs Babel after `ng build`, and `core-js-bundle` polyfills browser APIs. Only use APIs that core-js can polyfill: no `WeakRef` and no `FinalizationRegistry`. Always build with `npm run build`, never with a plain `ng build`.
 - **Audio:** iOS 12 only has `webkitAudioContext`, and audio must start from a user gesture.
 
+## Server layout
+
+`Program.cs` only wires things up. Each feature lives in `server/HomeViewer.Api/Features/<Name>/`, with its services, its models and a `<Name>Endpoints` class that has `Add<Name>()` (DI setup) and `Map<Name>Endpoints()`. Pieces several features use (`ApiError`, `DashboardHub`, `DataFolder`) live in `Shared/`. Everything stays in the `HomeViewer.Api` namespace.
+
 ## Client conventions
 
+- Layout under `src/app/`, enforced by ESLint (`eslint.config.js`):
+  - `core/`: app-wide services, such as settings, i18n and night mode.
+  - `shared/ui/`: reusable UI that knows nothing about the features.
+  - `features/<name>/`: one folder per feature. Containers (components that inject services) sit at the feature root, presentational components in `ui/` (inputs and outputs only, no services), and the feature's service in `data-access/`. A feature never imports another feature.
+  - Pages that combine features (`dashboard/`, `admin/`) sit next to `features/`.
 - Standalone components, signals, `OnPush` change detection, built-in control flow (`@if`/`@for`), and `inject()`. Strict ESLint enforces these.
 - Icons come from Hugeicons: `<hugeicons-icon>` from `@hugeicons/angular`, with icons imported one at a time from `@hugeicons/core-free-icons`. Never import the whole set. Size icons with Tailwind classes, and use `currentColor` so they follow the theme.
 - Style with Tailwind utilities in templates. Use a component `.scss` file only for vendor-specific CSS or shared `@apply` classes.
 - Theme: `SettingsService.isDark` drives a `dark` class on each page's host. In templates, `dark:` utilities work. In a component `.scss`, `@apply dark:...` never matches, because view encapsulation scopes it, so write `:host(.dark) .x { @apply ... }` instead.
-- Text: every user-facing string goes in `src/app/i18n/en.ts`, with the same key in `de.ts` and `pt-BR.ts` (the build fails otherwise). Templates use the `transloco` pipe. Text worked out in code returns a `Text` (`{ key, params }`) and is shown with the `text` pipe; don't translate in TypeScript, because a language's texts may not be loaded yet. Dates take their format from `dates.*` and the locale from `SettingsService.language`. Server errors the admin page shows are an `ApiError` with a `code` under `errors`.
+- Text: every user-facing string goes in `src/app/core/i18n/en.ts`, with the same key in `de.ts` and `pt-BR.ts` (the build fails otherwise). Templates use the `transloco` pipe. Text worked out in code returns a `Text` (`{ key, params }`) and is shown with the `text` pipe; don't translate in TypeScript, because a language's texts may not be loaded yet. Dates take their format from `dates.*` and the locale from `SettingsService.language`. Server errors the admin page shows are an `ApiError` with a `code` under `errors`.
 - Tests: follow the `writing-tests` skill in `.claude/skills/` (Arrange/Act/Assert comments, and every test asserts). Vitest through `ng test`, written "act, wait, assert" (`await fixture.whenStable()`, not `detectChanges()`). The helpers in `src/testing/test-helpers.ts` include a fake SignalR hub and `HttpTestingController` setup. `vi.mock` doesn't work with Angular's test builder, so inject dependencies instead (see `SETTINGS_HUB`).
 - Coverage must stay at 95% or higher (statements, branches, functions, lines). It's currently about 99%.
 

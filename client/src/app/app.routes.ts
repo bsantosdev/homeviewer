@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { Admin } from './admin/admin';
 import { Dashboard } from './dashboard/dashboard';
-import { ShoppingPage } from './shopping/shopping-page';
+import { ShoppingPage } from './features/shopping/shopping-page';
 
 export const routes: Routes = [
   { path: '', component: Dashboard },

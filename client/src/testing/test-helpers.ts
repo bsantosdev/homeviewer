@@ -1,10 +1,14 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { vi } from 'vitest';
-import { Text, provideI18n } from '../app/i18n';
-import { en } from '../app/i18n/en';
-import { DashboardSettings, SETTINGS_HUB, SettingsHub } from '../app/settings.service';
-import { Playback, PlayingItem, SpotifyDevice } from '../app/spotify.service';
+import { Text, provideI18n } from '../app/core/i18n';
+import { en } from '../app/core/i18n/en';
+import { DashboardSettings, SETTINGS_HUB, SettingsHub } from '../app/core/settings.service';
+import {
+  Playback,
+  PlayingItem,
+  SpotifyDevice,
+} from '../app/features/music/data-access/spotify.service';
 
 export const TEST_SETTINGS: DashboardSettings = {
   title: 'Home',

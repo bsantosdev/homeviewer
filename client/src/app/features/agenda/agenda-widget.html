@@ -1,0 +1,34 @@
+<section class="card flex min-h-0 flex-1 flex-col">
+  <h2 class="card-title">{{ 'dashboard.agenda' | transloco }}</h2>
+  <div class="agenda min-h-0 flex-1 overflow-y-auto text-vh-2.5 [-webkit-overflow-scrolling:touch]">
+    @for (day of agenda(); track day.date.getTime()) {
+      <section class="mb-[2vh] last:mb-0">
+        <h3 class="m-0 mb-[0.6vh] text-[2.2vh] font-semibold opacity-60 first-letter:uppercase">
+          {{
+            day.label
+              ? (day.label | transloco)
+              : (day.date | date: ('dates.long' | transloco) : undefined : language())
+          }}
+        </h3>
+        @for (item of day.items; track $index) {
+          <div class="flex items-center py-[0.4vh] leading-snug">
+            <span class="w-[14vh] shrink-0 pr-[1vh]">
+              <span
+                class="calendar-badge inline-block max-w-full truncate rounded-full px-[1vh] align-middle text-[2vh] font-medium"
+                [style.background-color]="item.color"
+                [style.color]="item.textColor"
+                >{{ item.calendar }}</span
+              >
+            </span>
+            <span class="time w-[11vh] shrink-0 tabular-nums opacity-70">{{
+              item.time | text
+            }}</span>
+            <span class="title min-w-0 flex-1 truncate">{{ item.title }}</span>
+          </div>
+        } @empty {
+          <p class="m-0 opacity-50">{{ 'dashboard.nothingPlanned' | transloco }}</p>
+        }
+      </section>
+    }
+  </div>
+</section>

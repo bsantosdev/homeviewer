@@ -11,13 +11,13 @@ import {
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { BackgroundsService, backgroundUrl } from '../backgrounds';
-import { LANGUAGES, LANGUAGE_NAMES, Text, TextError, TextPipe, isApiError } from '../i18n';
-import { en } from '../i18n/en';
-import { LightsService, RoomScene } from '../lights.service';
-import { Choice, MultiSelect } from '../multi-select/multi-select';
-import { DashboardSettings, SettingsService } from '../settings.service';
-import { SpotifyService } from '../spotify.service';
+import { BackgroundsService, backgroundUrl } from '../features/backgrounds/data-access/backgrounds';
+import { LANGUAGES, LANGUAGE_NAMES, Text, TextError, TextPipe, isApiError } from '../core/i18n';
+import { en } from '../core/i18n/en';
+import { LightsService, RoomScene } from '../features/lights/data-access/lights.service';
+import { Choice, MultiSelect } from '../shared/ui/multi-select/multi-select';
+import { DashboardSettings, SettingsService } from '../core/settings.service';
+import { SpotifyService } from '../features/music/data-access/spotify.service';
 
 /** Colours for new calendars, in turn. */
 export const CALENDAR_COLORS = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'];

@@ -103,7 +103,7 @@ jobs:
           /d:sonar.javascript.lcov.reportPaths="client/coverage/client/lcov.info"
           /d:sonar.exclusions="**/node_modules/**,client/coverage/**,client/.angular/**,server/HomeViewer.Api/wwwroot/**"
           /d:sonar.test.inclusions="client/src/**/*.spec.ts,client/src/testing/**"
-          /d:sonar.cpd.exclusions="client/src/app/i18n/**"
+          /d:sonar.cpd.exclusions="client/src/app/core/i18n/**"
           /d:sonar.qualitygate.wait=true
 
       - run: dotnet build HomeViewer.slnx

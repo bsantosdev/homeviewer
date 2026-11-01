@@ -3,7 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { provideI18n } from './i18n';
+import { provideI18n } from './core/i18n';
 
 export const appConfig: ApplicationConfig = {
   providers: [

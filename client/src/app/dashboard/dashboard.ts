@@ -10,35 +10,30 @@ import {
 } from '@angular/core';
 import { HugeiconsIconComponent } from '@hugeicons/angular';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { TextPipe } from '../i18n';
 import {
   BulbIcon,
   Home09Icon,
-  Leaf01Icon,
   Mail01Icon,
   MusicNote01Icon,
-  PauseIcon,
-  PlayIcon,
   ShoppingBasket01Icon,
   StopWatchIcon,
-  SunglassesIcon,
-  UmbrellaIcon,
 } from '@hugeicons/core-free-icons';
-import { AGENDA_DAYS, agenda, startOfDay } from '../agenda';
-import { Background } from '../background/background';
-import { CalendarEvent, CalendarService } from '../calendar.service';
-import { LightsService } from '../lights.service';
-import { Lights } from '../lights/lights';
-import { LightsSummary } from '../lights/lights-summary';
-import { Music } from '../music/music';
-import { WAKE_MS, isNight } from '../night';
-import { SettingsService } from '../settings.service';
-import { ShoppingService } from '../shopping.service';
-import { MUSIC_REFRESH_MS, SpotifyService } from '../spotify.service';
-import { ShoppingList } from '../shopping/shopping-list';
-import { Timer } from '../timer/timer';
-import { weatherIconFor } from '../weather-icons';
-import { Weather, WeatherService } from '../weather.service';
+import { AgendaWidget } from '../features/agenda/agenda-widget';
+import { Background } from '../features/backgrounds/background/background';
+import { CalendarService } from '../features/agenda/data-access/calendar.service';
+import { LightsService } from '../features/lights/data-access/lights.service';
+import { Lights } from '../features/lights/lights';
+import { LightsSummary } from '../features/lights/lights-summary';
+import { Music } from '../features/music/music';
+import { NowPlaying } from '../features/music/now-playing';
+import { WAKE_MS, isNight } from '../core/night';
+import { SettingsService } from '../core/settings.service';
+import { ShoppingService } from '../features/shopping/data-access/shopping.service';
+import { MUSIC_REFRESH_MS, SpotifyService } from '../features/music/data-access/spotify.service';
+import { ShoppingList } from '../features/shopping/shopping-list';
+import { Timer } from '../features/timer/timer';
+import { WeatherService } from '../features/weather/data-access/weather.service';
+import { WeatherWidget } from '../features/weather/weather-widget';
 
 export const WEATHER_REFRESH_MS = 1 * 60 * 1000;
 export const EVENTS_REFRESH_MS = 1 * 60 * 1000;
@@ -65,16 +60,18 @@ const EMAIL: NavItem = { page: 'email', label: 'nav.email', icon: Mail01Icon };
 @Component({
   selector: 'app-dashboard',
   imports: [
+    AgendaWidget,
     Background,
     DatePipe,
     HugeiconsIconComponent,
     Lights,
     LightsSummary,
     Music,
+    NowPlaying,
     ShoppingList,
-    TextPipe,
     Timer,
     TranslocoPipe,
+    WeatherWidget,
   ],
   templateUrl: './dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -92,18 +89,11 @@ export class Dashboard {
   private readonly calendarService = inject(CalendarService);
   private readonly settingsService = inject(SettingsService);
   private readonly lightsService = inject(LightsService);
-  protected readonly spotify = inject(SpotifyService);
+  private readonly spotify = inject(SpotifyService);
   protected readonly settings = this.settingsService.settings;
   protected readonly isDark = this.settingsService.isDark;
   protected readonly language = this.settingsService.language;
   protected readonly now = signal(new Date());
-  protected readonly weather = signal<Weather | null>(null);
-  protected readonly weatherIconFor = weatherIconFor;
-  protected readonly umbrellaIcon = UmbrellaIcon;
-  protected readonly uvIcon = SunglassesIcon;
-  protected readonly airIcon = Leaf01Icon;
-  protected readonly playIcon = PlayIcon;
-  protected readonly pauseIcon = PauseIcon;
   /** Shown on the list's button, so it's clear from home that there's shopping to do. */
   protected readonly toBuy = inject(ShoppingService).open;
   private readonly chosen = signal<Page>('home');
@@ -111,11 +101,6 @@ export class Dashboard {
   protected readonly hasLights = computed(() => this.lightsService.rooms() !== null);
   /** Music only shows once the server says Spotify is set up. */
   protected readonly hasMusic = computed(() => this.spotify.status() !== null);
-  /** What Spotify is playing or has paused, for the strip under the clock. */
-  protected readonly nowPlaying = computed(() => {
-    const playback = this.spotify.status()?.playback;
-    return playback?.item ? { ...playback, item: playback.item } : null;
-  });
   /** Falls back to home if the bridge or Spotify goes away while its page is open. */
   protected readonly page = computed(() => {
     const chosen = this.chosen();
@@ -149,8 +134,6 @@ export class Dashboard {
   protected readonly hasCalendars = computed(() => !!this.settings()?.calendars.length);
   /** Whether home has a right-hand column of lists, or the clock gets the whole width. */
   protected readonly hasWidgets = computed(() => this.hasCalendars() || this.hasLights());
-  private readonly events = signal<CalendarEvent[]>([]);
-  protected readonly agenda = computed(() => agenda(this.events(), this.now()));
 
   private readonly location = computed(() => {
     const s = this.settings();
@@ -223,24 +206,11 @@ export class Dashboard {
 
   private async loadWeather(): Promise<void> {
     const s = this.settings();
-    if (!s) return;
-    try {
-      this.weather.set(await this.weatherService.current(s.latitude, s.longitude));
-    } catch (err: unknown) {
-      console.error('Weather fetch failed', err);
-    }
+    if (s) await this.weatherService.load(s.latitude, s.longitude);
   }
 
   private async loadEvents(): Promise<void> {
-    if (!this.hasCalendars()) {
-      this.events.set([]);
-      return;
-    }
-    const today = startOfDay(new Date());
-    try {
-      this.events.set(await this.calendarService.events(today, startOfDay(today, AGENDA_DAYS)));
-    } catch (err: unknown) {
-      console.error('Calendar fetch failed', err);
-    }
+    if (this.hasCalendars()) await this.calendarService.load();
+    else this.calendarService.clear();
   }
 }
